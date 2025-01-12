@@ -6,47 +6,67 @@ use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
+
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-class User
+class User implements PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['user'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['user'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['user'])]
     private ?string $email = null;
 
     #[ORM\Column(length: 255)]
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['user'])]
     private ?string $gender = null;
 
     #[ORM\Column]
+    #[Groups(['user'])]
     private ?int $age = null;
 
     #[ORM\Column]
+    #[Groups(['user'])]
     private ?float $weight = null;
 
     #[ORM\Column]
+    #[Groups(['user'])]
     private ?float $height = null;
 
     /**
      * @var Collection<int, Program>
      */
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Program::class, cascade: ['persist', 'remove'])]
+    #[Groups(['user'])]
     private Collection $programs;
 
     /**
      * @var Collection<int, Workout>
      */
     #[ORM\OneToMany(targetEntity: Workout::class, mappedBy: 'user')]
+    #[Groups(['user'])]
     private Collection $workouts;
+
+    #[ORM\Column(length: 255)]
+    #[Assert\Regex(
+        pattern: '/^\+?[0-9]{10,15}$/',
+        message: 'Le numéro de téléphone doit contenir entre 10 et 15 chiffres et peut commencer par +'
+    )]
+    private ?string $phoneNumber = null;
 
     public function __construct()
     {
@@ -189,6 +209,18 @@ class User
                 $workout->setUser(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getPhoneNumber(): ?string
+    {
+        return $this->phoneNumber;
+    }
+
+    public function setPhoneNumber(string $phoneNumber): static
+    {
+        $this->phoneNumber = $phoneNumber;
 
         return $this;
     }
