@@ -27,7 +27,11 @@ services:
     volumes:
       - db-data:/var/lib/mysql
     environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_USER: ide
+      MYSQL_PASSWORD: ide
+      MYSQL_ROOT_PASSWORD: 'root'
+      MYSQL_DATABASE: helstorm
+
     networks:
       - symfony
 
@@ -40,6 +44,7 @@ services:
         - "8083:80"
       environment:
         PMA_HOST: db
+        MYSQL_ROOT_PASSWORD: root
       networks:
         - symfony
 
