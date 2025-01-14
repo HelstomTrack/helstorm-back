@@ -1,0 +1,54 @@
+nelmio_api_doc:
+  use_validation_groups: true
+
+  documentation:
+    servers:
+      - url: http://localhost:10302
+        description: API over HTTP
+      - url: http://localhost:10302
+        description: API over HTTPS
+    info:
+      title: Helstorm-track
+      description: API of Helstorm-track
+      version: 1.0.0
+      x-build: #CommitHash
+
+    paths:
+      /login_check:
+        post:
+          tags: ['Authentication']
+          summary: 'Log in to obtain a JWT token'
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    username:
+                      type: string
+                      example: "user@example.com"
+                    password:
+                      type: string
+                      example: "your_password"
+          responses:
+            '200':
+              description: 'JWT token response'
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            '401':
+              description: 'Invalid credentials'
+    components:
+      securitySchemes:
+        Bearer:
+          type: http
+          scheme: bearer
+          bearerFormat: JWT
+    security:
+      - Bearer: []
