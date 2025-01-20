@@ -48,20 +48,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user'])]
     private ?float $height = null;
 
-    /**
-     * @var Collection<int, Program>
-     */
-    #[ORM\OneToMany(targetEntity: Program::class, mappedBy: 'user', cascade: ['persist', 'remove'])]
-    #[Groups(['user'])]
-    private Collection $programs;
-
-    /**
-     * @var Collection<int, Workout>
-     */
-    #[ORM\OneToMany(targetEntity: Workout::class, mappedBy: 'user')]
-    #[Groups(['user'])]
-    private Collection $workouts;
-
     #[ORM\Column(length: 255)]
     #[Assert\Regex(
         pattern: '/^\+?[0-9]{10,15}$/',
@@ -72,8 +58,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function __construct()
     {
-        $this->programs = new ArrayCollection();
-        $this->workouts = new ArrayCollection();
     }
 
     public function getId(): ?int
