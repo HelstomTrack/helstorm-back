@@ -66,7 +66,6 @@ class UserController extends AbstractController
         content: new Model(type: User::class, groups: ['non_sensitive_data'])
     )]
     #[OA\Tag(name: 'User')]
-
     #[Route('/api/user', name: 'app_user', methods: ['GET'])]
     public function getAllUser(SerializerInterface $serializer): JsonResponse
     {

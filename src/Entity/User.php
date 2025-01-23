@@ -142,62 +142,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * @return Collection<int, Program>
-     */
-    public function getPrograms(): Collection
-    {
-        return $this->programs;
-    }
-
-    public function addProgram(Program $program): static
-    {
-        if (!$this->programs->contains($program)) {
-            $this->programs->add($program);
-            $program->setUser($this);
-        }
-        return $this;
-    }
-
-    public function removeProgram(Program $program): static
-    {
-        if ($this->programs->removeElement($program)) {
-            if ($program->getUser() === $this) {
-                $program->setUser(null);
-            }
-        }
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, Workout>
-     */
-    public function getWorkouts(): Collection
-    {
-        return $this->workouts;
-    }
-
-    public function addWorkout(Workout $workout): static
-    {
-        if (!$this->workouts->contains($workout)) {
-            $this->workouts->add($workout);
-            $workout->setUser($this);
-        }
-
-        return $this;
-    }
-
-    public function removeWorkout(Workout $workout): static
-    {
-        if ($this->workouts->removeElement($workout)) {
-            // set the owning side to null (unless already changed)
-            if ($workout->getUser() === $this) {
-                $workout->setUser(null);
-            }
-        }
-
-        return $this;
-    }
 
     public function getPhoneNumber(): ?string
     {
