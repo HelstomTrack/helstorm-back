@@ -31,15 +31,12 @@ class UserController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         $user = new User();
-        $user->setName($data['name']);
         $user->setEmail($data['email']);
-        $user->setGender($data['gender']);
-        $user->setAge($data['age']);
-        $user->setWeight($data['weight']);
-        $user->setHeight($data['height']);
-        $user->setPhoneNumber($data['phoneNumber']);
+        $user->setFirstname($data['firstname']);
+        $user->setLastname($data['lastname']);
+        $user->setPhone($data['phone']);
 
-        $existingUser = $userRepository->findByEmailOrPhoneNumber($data['email'], $data['phoneNumber']);
+        $existingUser = $userRepository->findByEmailOrPhoneNumber($data['email'], $data['phone']);
 
         if($existingUser){
             return new JsonResponse(['User exist in database'], Response::HTTP_BAD_REQUEST);
@@ -56,6 +53,7 @@ class UserController extends AbstractController
         return new JsonResponse(['message' => 'Registration successful'], 201);
 
     }
+
     /***
      * @param SerializerInterface $serializer
      * @return JsonResponse
@@ -75,7 +73,6 @@ class UserController extends AbstractController
         }
         $jsonData = $serializer->serialize($users, 'json', ['groups' => 'user', 'json_encode_options' => JSON_PRETTY_PRINT,
         ]);
-
         return new JsonResponse($jsonData, Response::HTTP_OK, ['accept' => 'json'], true);
     }
 

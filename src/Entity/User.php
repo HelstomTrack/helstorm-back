@@ -3,77 +3,60 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
+use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
-use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
+#[ORM\HasLifecycleCallbacks]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['user'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['user'])]
-    private ?string $name = null;
-
-    #[ORM\Column(length: 255)]
-    #[Groups(['user'])]
+    #[Groups('user')]
     private ?string $email = null;
 
     #[ORM\Column(length: 255)]
-    private ?string $password = null;
+    #[Groups('user')]
+    private ?string $firstname = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['user'])]
-    private ?string $gender = null;
+    #[Groups('user')]
+    private ?string $lastname = null;
 
-    #[ORM\Column]
-    #[Groups(['user'])]
-    private ?int $age = null;
-
-    #[ORM\Column]
-    #[Groups(['user'])]
-    private ?float $weight = null;
-
-    #[ORM\Column]
-    #[Groups(['user'])]
-    private ?float $height = null;
+    #[ORM\Column(length: 255)]
+    private ?string $password = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\Regex(
         pattern: '/^\+?[0-9]{10,15}$/',
         message: 'Le numéro de téléphone doit contenir entre 10 et 15 chiffres et peut commencer par +'
     )]
-    #[Groups(['user'])]
-    private ?string $phoneNumber = null;
+    private ?string $phone = null;
 
-    public function __construct()
-    {
-    }
+    #[ORM\Column]
+    #[Groups('user')]
+    private array $roles = ['ROLE_USER'];
+
+    #[ORM\Column]
+    #[Groups('user')]
+    private ?\DateTimeImmutable $created_at = null;
+
+    #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
+    #[Groups('user')]
+    private ?UserMetrics $userMetrics = null;
 
     public function getId(): ?int
     {
         return $this->id;
-    }
-
-    public function getName(): ?string
-    {
-        return $this->name;
-    }
-
-    public function setName(string $name): static
-    {
-        $this->name = $name;
-        return $this;
     }
 
     public function getEmail(): ?string
@@ -84,6 +67,31 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setEmail(string $email): static
     {
         $this->email = $email;
+
+        return $this;
+    }
+
+    public function getFirstname(): ?string
+    {
+        return $this->firstname;
+    }
+
+    public function setFirstname(string $firstname): static
+    {
+        $this->firstname = $firstname;
+
+        return $this;
+    }
+
+    public function getLastname(): ?string
+    {
+        return $this->lastname;
+    }
+
+    public function setLastname(string $lastname): static
+    {
+        $this->lastname = $lastname;
+
         return $this;
     }
 
@@ -95,69 +103,68 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPassword(string $password): static
     {
         $this->password = $password;
+
         return $this;
     }
 
-    public function getGender(): ?string
+    public function getPhone(): ?string
     {
-        return $this->gender;
+        return $this->phone;
     }
 
-    public function setGender(string $gender): static
+    public function setPhone(string $phone): static
     {
-        $this->gender = $gender;
-        return $this;
-    }
-
-    public function getAge(): ?int
-    {
-        return $this->age;
-    }
-
-    public function setAge(int $age): static
-    {
-        $this->age = $age;
-        return $this;
-    }
-
-    public function getWeight(): ?float
-    {
-        return $this->weight;
-    }
-
-    public function setWeight(float $weight): static
-    {
-        $this->weight = $weight;
-        return $this;
-    }
-
-    public function getHeight(): ?float
-    {
-        return $this->height;
-    }
-
-    public function setHeight(float $height): static
-    {
-        $this->height = $height;
-        return $this;
-    }
-
-
-    public function getPhoneNumber(): ?string
-    {
-        return $this->phoneNumber;
-    }
-
-    public function setPhoneNumber(string $phoneNumber): static
-    {
-        $this->phoneNumber = $phoneNumber;
+        $this->phone = $phone;
 
         return $this;
     }
 
     public function getRoles(): array
     {
-        return ["ROLE_USER"];
+        $roles = $this->roles;
+        $roles[] = 'ROLE_USER';
+
+        return array_unique($roles);
+    }
+
+    public function setRoles(array $roles): self
+    {
+        $this->roles = $roles;
+        return $this;
+    }
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->created_at;
+    }
+
+    #[ORM\PrePersist]
+    public function setDefaultCreatedAt(): void
+    {
+        if ($this->created_at === null) {
+            $this->created_at = new DateTimeImmutable();
+        }
+    }
+
+    public function getUserMetrics(): ?UserMetrics
+    {
+        return $this->userMetrics;
+    }
+
+    public function setUserMetrics(?UserMetrics $userMetrics): static
+    {
+        // unset the owning side of the relation if necessary
+        if ($userMetrics === null && $this->userMetrics !== null) {
+            $this->userMetrics->setUser(null);
+        }
+
+        // set the owning side of the relation if necessary
+        if ($userMetrics !== null && $userMetrics->getUser() !== $this) {
+            $userMetrics->setUser($this);
+        }
+
+        $this->userMetrics = $userMetrics;
+
+        return $this;
     }
 
     public function eraseCredentials(): void
