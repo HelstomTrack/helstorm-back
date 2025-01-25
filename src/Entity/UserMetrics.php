@@ -3,10 +3,12 @@
 namespace App\Entity;
 
 use App\Repository\UserMetricsRepository;
+use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: UserMetricsRepository::class)]
+#[ORM\HasLifecycleCallbacks]
 class UserMetrics
 {
     #[ORM\Id]
@@ -37,6 +39,9 @@ class UserMetrics
     #[Groups('user')]
     private ?string $level = null;
 
+    #[ORM\Column(length: 255)]
+    #[Groups('user')]
+    private ?string $gender = null;
     #[ORM\Column]
     private ?\DateTimeImmutable $created_at = null;
 
@@ -135,10 +140,11 @@ class UserMetrics
         return $this->created_at;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $created_at): static
+    #[ORM\PrePersist]
+    public function setDefaultCreatedAt(): void
     {
-        $this->created_at = $created_at;
-
-        return $this;
+        if ($this->created_at === null) {
+            $this->created_at = new DateTimeImmutable();
+        }
     }
 }
