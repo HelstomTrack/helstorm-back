@@ -4,6 +4,8 @@ namespace App\Entity;
 
 use App\Repository\UserRepository;
 use DateTimeImmutable;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -53,6 +55,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
     #[Groups('user')]
     private ?UserMetrics $userMetrics = null;
+
+    /**
+     * @var Collection<int, UserPrograms>
+     */
+    #[ORM\OneToMany(targetEntity: UserPrograms::class, mappedBy: 'user')]
+    private Collection $userPrograms;
+
+    public function __construct()
+    {
+        $this->userPrograms = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -137,6 +150,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->created_at;
     }
 
+    public function getDefaultCreatedAt(): \DateTimeInterface
+    {
+        return $this->created_at;
+    }
+
     #[ORM\PrePersist]
     public function setDefaultCreatedAt(): void
     {
@@ -175,5 +193,35 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getUserIdentifier(): string
     {
         return (string) $this->email;
+    }
+
+    /**
+     * @return Collection<int, UserPrograms>
+     */
+    public function getUserPrograms(): Collection
+    {
+        return $this->userPrograms;
+    }
+
+    public function addUserProgram(UserPrograms $userProgram): static
+    {
+        if (!$this->userPrograms->contains($userProgram)) {
+            $this->userPrograms->add($userProgram);
+            $userProgram->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUserProgram(UserPrograms $userProgram): static
+    {
+        if ($this->userPrograms->removeElement($userProgram)) {
+            // set the owning side to null (unless already changed)
+            if ($userProgram->getUser() === $this) {
+                $userProgram->setUser(null);
+            }
+        }
+
+        return $this;
     }
 }
