@@ -6,16 +6,17 @@ use App\Entity\Programs;
 use App\Entity\User;
 use App\Entity\UserMetrics;
 use App\Entity\UserPrograms;
+use App\Service\ProgramSelectorService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Serializer\SerializerInterface;
 
 class ProgramController extends AbstractController
 {
     public function __construct(
-        public EntityManagerInterface $entityManager
+        public EntityManagerInterface $entityManager, public ProgramSelectorService $programSelectorService
     )
     {
     }
@@ -77,46 +78,34 @@ class ProgramController extends AbstractController
     }
 
 
-    #[Route('/program/assign/{id}', name: 'app_program_goal', methods: ['POST'])]
-    public function createUserWithProgram(
-        int $id,
-        EntityManagerInterface $entityManager,
-    ): JsonResponse {
-
+    #[Route('/api/program/assign/{id}', name: 'app_program_goal', methods: ['POST'])]
+    public function createUserWithProgram(int $id, EntityManagerInterface $entityManager): JsonResponse
+    {
         $user = $entityManager->getRepository(User::class)->find($id);
-
-        if (!$user) {
-            return new JsonResponse(['error' => 'Utilisateur non trouvé'], 404);
-        }
-
         $userMetrics = $entityManager->getRepository(UserMetrics::class)->findOneBy(['user' => $user]);
 
-        if (!$userMetrics) {
-            return new JsonResponse(['error' => 'Metrics utilisateur non trouvées'], 404);
+        if (!$user) {
+            return new JsonResponse(['error' => 'Utilisateur non trouvé'], Response::HTTP_NOT_FOUND);
+        } elseif (!$userMetrics) {
+            return new JsonResponse(['error' => 'Metrics utilisateur non trouvées'], Response::HTTP_NOT_FOUND);
         }
+
+        if ($user->getId() !== null) {
+            return new JsonResponse(['error' => 'l\'utilisateur à déjà un programme'], Response::HTTP_CONFLICT);
+        }
+        $program = $this->programSelectorService->getProgram(
+            $userMetrics->getGoal(),
+            $userMetrics->getWeight(),
+            $userMetrics->getHeight()
+        );
 
         $userProgram = new UserPrograms();
-        switch ($userMetrics->getGoal()) {
-            case 'strong':
-                $program = $entityManager->getRepository(Programs::class)->findOneBy(['name' => 'PPL']);
-                break;
-            case 'seche':
-                $program = $entityManager->getRepository(Programs::class)->findOneBy(['name' => 'Hybride']);
-                break;
-            default:
-                return new JsonResponse(['error' => 'Objectif non pris en charge'], 400);
-        }
-
-        if (!$program) {
-            return new JsonResponse(['error' => 'Programme non trouvé'], 404);
-        }
-
         $userProgram->setPrograms($program);
         $userProgram->setUser($user);
 
         $entityManager->persist($userProgram);
         $entityManager->flush();
-        return new JsonResponse(['message' => 'Programme assigné avec succès'], 201);
-    }
 
+        return new JsonResponse(['message' => 'Programme assigned'], Response::HTTP_CREATED);
+    }
 }
