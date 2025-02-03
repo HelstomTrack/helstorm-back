@@ -39,6 +39,12 @@ class Exercises
     #[ORM\OneToMany(targetEntity: ProgramsExercises::class, mappedBy: 'exercise')]
     private Collection $programsExercises;
 
+    #[ORM\Column(length: 255)]
+    private ?string $series = null;
+
+    #[ORM\Column]
+    private ?int $calories = null;
+
     public function __construct()
     {
         $this->programsExercises = new ArrayCollection();
@@ -137,5 +143,34 @@ class Exercises
         }
 
         return $this;
+    }
+
+    public function getSeries(): ?string
+    {
+        return $this->series;
+    }
+
+    public function setSeries(string $series): static
+    {
+        $this->series = $series;
+
+        return $this;
+    }
+
+    public function getCalories(): ?int
+    {
+        return $this->calories;
+    }
+
+    public function setCalories(int $calories): static
+    {
+        $this->calories = $calories;
+
+        return $this;
+    }
+
+    public function __toString(): string
+    {
+        return $this->name;
     }
 }
