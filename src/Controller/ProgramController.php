@@ -63,14 +63,19 @@ class ProgramController extends AbstractController
                 return [
                     'id' => $exercise->getId(),
                     'name' => $exercise->getName(),
-                    'description' => $exercise->getDescription()
+                    'description' => $exercise->getDescription(),
+                    'rest_time' => $exercise->getRestTime(),
+                    'difficulty' => $exercise->getDifficulty(),
+                    'category' => $exercise->getCategory(),
+                    'series' => $exercise->getSeries(),
+                    'calories' => $exercise->getCalories()
                 ];
             })->toArray();
 
             return [
                 'id' => $program->getId(),
                 'name' => $program->getName(),
-                'exercises' => $exercises,
+                'exercises' => $exercises
             ];
         }, $programs);
 

@@ -22,7 +22,6 @@ class ProgramsExercisesCrudController extends AbstractCrudController
         return [
             AssociationField::new('program'),
             AssociationField::new('exercise')
-
         ];
     }
 
