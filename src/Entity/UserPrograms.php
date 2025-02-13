@@ -72,5 +72,4 @@ class UserPrograms
             $this->assigned_at = new DateTimeImmutable();
         }
     }
-
 }

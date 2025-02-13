@@ -113,4 +113,26 @@ class ProgramController extends AbstractController
 
         return new JsonResponse(['message' => 'Programme assigned'], Response::HTTP_CREATED);
     }
+
+    #[Route('/program/user/{id}', name: 'app_program_goal', methods: ['GET'])]
+    public function getUserProgram(int $id) : JsonResponse
+    {
+        $user = $this->entityManager->getRepository(User::class)->find($id);
+
+        $program = array_map(fn($userProgram) => [
+            'id' => $userProgram->getPrograms()->getId(),
+            'name' => $userProgram->getPrograms()->getName(),
+            'description' => $userProgram->getPrograms()->getDescription(),
+            'created_at' => $userProgram->getPrograms()->getCreatedAt(),
+            'exercises' => $userProgram->getPrograms()->getProgramsExercises()->map(fn($programExercise) => [
+                'id' => $programExercise->getExercise()->getId(),
+                'name' => $programExercise->getExercise()->getName(),
+                'description' => $programExercise->getExercise()->getDescription(),
+                'rest_time' => $programExercise->getExercise()->getRestTime(),
+                'difficulty' => $programExercise->getExercise()->getDifficulty()
+            ])->toArray()
+        ], $user->getUserPrograms()->toArray());
+
+        return new JsonResponse($program);
+    }
 }
