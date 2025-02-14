@@ -107,6 +107,16 @@
       <path value="$PROJECT_DIR$/vendor/monolog/monolog" />
       <path value="$PROJECT_DIR$/vendor/symfony/monolog-bridge" />
       <path value="$PROJECT_DIR$/vendor/symfony/monolog-bundle" />
+      <path value="$PROJECT_DIR$/vendor/twig 2/html-extra" />
+      <path value="$PROJECT_DIR$/vendor/twig 2/extra-bundle" />
+      <path value="$PROJECT_DIR$/vendor/phpdocumentor 2/reflection-docblock" />
+      <path value="$PROJECT_DIR$/vendor/phpdocumentor 2/type-resolver" />
+      <path value="$PROJECT_DIR$/vendor/phpdocumentor 2/reflection-common" />
+      <path value="$PROJECT_DIR$/vendor/webmozart 2/assert" />
+      <path value="$PROJECT_DIR$/vendor/twig 2/twig" />
+      <path value="$PROJECT_DIR$/vendor/phpstan 2/phpdoc-parser" />
+      <path value="$PROJECT_DIR$/vendor/symfony/http-client" />
+      <path value="$PROJECT_DIR$/vendor/symfony/http-client-contracts" />
     </include_path>
   </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="8.2" />

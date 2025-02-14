@@ -28,22 +28,26 @@ class Programs
     private ?\DateTimeImmutable $created_at = null;
 
     /**
-     * @var Collection<int, UserPrograms>
-     */
-    #[ORM\OneToMany(targetEntity: UserPrograms::class, mappedBy: 'programs')]
-    private Collection $userPrograms;
-
-    /**
      * @var Collection<int, ProgramsExercises>
      */
     #[ORM\OneToMany(targetEntity: ProgramsExercises::class, mappedBy: 'program')]
     private Collection $programsExercises;
+
+    #[ORM\ManyToOne(inversedBy: 'program')]
+    private ?Plan $plan = null;
+
+    /**
+     * @var Collection<int, Plan>
+     */
+    #[ORM\ManyToMany(targetEntity: Plan::class, mappedBy: 'program')]
+    private Collection $plans;
 
 
     public function __construct()
     {
         $this->userPrograms = new ArrayCollection();
         $this->programsExercises = new ArrayCollection();
+        $this->plans = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -88,36 +92,6 @@ class Programs
     }
 
     /**
-     * @return Collection<int, UserPrograms>
-     */
-    public function getUserPrograms(): Collection
-    {
-        return $this->userPrograms;
-    }
-
-    public function addUserProgram(UserPrograms $userProgram): static
-    {
-        if (!$this->userPrograms->contains($userProgram)) {
-            $this->userPrograms->add($userProgram);
-            $userProgram->setPrograms($this);
-        }
-
-        return $this;
-    }
-
-    public function removeUserProgram(UserPrograms $userProgram): static
-    {
-        if ($this->userPrograms->removeElement($userProgram)) {
-            // set the owning side to null (unless already changed)
-            if ($userProgram->getPrograms() === $this) {
-                $userProgram->setPrograms(null);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
      * @return Collection<int, ProgramsExercises>
      */
     public function getProgramsExercises(): Collection
@@ -150,5 +124,44 @@ class Programs
     public function __toString(): string
     {
         return $this->name;
+    }
+
+    public function getPlan(): ?Plan
+    {
+        return $this->plan;
+    }
+
+    public function setPlan(?Plan $plan): static
+    {
+        $this->plan = $plan;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Plan>
+     */
+    public function getPlans(): Collection
+    {
+        return $this->plans;
+    }
+
+    public function addPlan(Plan $plan): static
+    {
+        if (!$this->plans->contains($plan)) {
+            $this->plans->add($plan);
+            $plan->addProgram($this);
+        }
+
+        return $this;
+    }
+
+    public function removePlan(Plan $plan): static
+    {
+        if ($this->plans->removeElement($plan)) {
+            $plan->removeProgram($this);
+        }
+
+        return $this;
     }
 }

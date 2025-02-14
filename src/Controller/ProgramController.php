@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Plan;
 use App\Entity\Programs;
 use App\Entity\User;
 use App\Entity\UserMetrics;
@@ -16,7 +17,8 @@ use Symfony\Component\Routing\Attribute\Route;
 class ProgramController extends AbstractController
 {
     public function __construct(
-        public EntityManagerInterface $entityManager, public ProgramSelectorService $programSelectorService
+        public EntityManagerInterface $entityManager,
+        public ProgramSelectorService $programSelectorService
     )
     {
     }
@@ -46,7 +48,6 @@ class ProgramController extends AbstractController
             ],
         ]);
     }
-
 
     #[Route('/program', name: 'app_program', methods: ['GET'])]
     public function getAllProgram(): JsonResponse
@@ -82,7 +83,6 @@ class ProgramController extends AbstractController
         return new JsonResponse($data);
     }
 
-
     #[Route('/api/program/assign/{id}', name: 'app_program_goal', methods: ['POST'])]
     public function createUserWithProgram(int $id, EntityManagerInterface $entityManager): JsonResponse
     {
@@ -115,24 +115,34 @@ class ProgramController extends AbstractController
     }
 
     #[Route('/program/user/{id}', name: 'app_program_goal', methods: ['GET'])]
-    public function getUserProgram(int $id) : JsonResponse
+    public function getUserPlan(int $id) : JsonResponse
     {
         $user = $this->entityManager->getRepository(User::class)->find($id);
+        if (!$user) {
+            return new JsonResponse(['error' => 'Utilisateur non trouvé'], Response::HTTP_NOT_FOUND);
+        }
 
-        $program = array_map(fn($userProgram) => [
-            'id' => $userProgram->getPrograms()->getId(),
-            'name' => $userProgram->getPrograms()->getName(),
-            'description' => $userProgram->getPrograms()->getDescription(),
-            'created_at' => $userProgram->getPrograms()->getCreatedAt(),
-            'exercises' => $userProgram->getPrograms()->getProgramsExercises()->map(fn($programExercise) => [
-                'id' => $programExercise->getExercise()->getId(),
-                'name' => $programExercise->getExercise()->getName(),
-                'description' => $programExercise->getExercise()->getDescription(),
-                'rest_time' => $programExercise->getExercise()->getRestTime(),
-                'difficulty' => $programExercise->getExercise()->getDifficulty()
-            ])->toArray()
-        ], $user->getUserPrograms()->toArray());
+        $data = array_map(fn($plan) => [
+            'id' => $plan->getId(),
+            'name' => $plan->getName(),
+            'programs' => $plan->getProgram()->map(
+                fn($program) => [
+                    'id' => $program->getId(),
+                    'name' => $program->getName(),
+                    'exercises' => $program->getProgramsExercises()->map(
+                        fn($programExercise) => [
+                            'id' => $programExercise->getExercise()->getId(),
+                            'name' => $programExercise->getExercise()->getName(),
+                            'description' => $programExercise->getExercise()->getDescription(),
+                            'rest_time' => $programExercise->getExercise()->getRestTime(),
+                            'difficulty' => $programExercise->getExercise()->getDifficulty()
+                        ]
+                    )->toArray()
+                ]
+            )->toArray(),
+        ], $user->getPlans()->toArray());
 
-        return new JsonResponse($program);
+        return new JsonResponse($data);
     }
+
 }

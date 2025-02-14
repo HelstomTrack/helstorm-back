@@ -57,14 +57,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?UserMetrics $userMetrics = null;
 
     /**
-     * @var Collection<int, UserPrograms>
+     * @var Collection<int, Plan>
      */
-    #[ORM\OneToMany(targetEntity: UserPrograms::class, mappedBy: 'user')]
-    private Collection $userPrograms;
+    #[ORM\ManyToMany(targetEntity: Plan::class, mappedBy: 'user')]
+    private Collection $plans;
 
     public function __construct()
     {
-        $this->userPrograms = new ArrayCollection();
+        $this->plans = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -196,30 +196,27 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * @return Collection<int, UserPrograms>
+     * @return Collection<int, Plan>
      */
-    public function getUserPrograms(): Collection
+    public function getPlans(): Collection
     {
-        return $this->userPrograms;
+        return $this->plans;
     }
 
-    public function addUserProgram(UserPrograms $userProgram): static
+    public function addPlan(Plan $plan): static
     {
-        if (!$this->userPrograms->contains($userProgram)) {
-            $this->userPrograms->add($userProgram);
-            $userProgram->setUser($this);
+        if (!$this->plans->contains($plan)) {
+            $this->plans->add($plan);
+            $plan->addUser($this);
         }
 
         return $this;
     }
 
-    public function removeUserProgram(UserPrograms $userProgram): static
+    public function removePlan(Plan $plan): static
     {
-        if ($this->userPrograms->removeElement($userProgram)) {
-            // set the owning side to null (unless already changed)
-            if ($userProgram->getUser() === $this) {
-                $userProgram->setUser(null);
-            }
+        if ($this->plans->removeElement($plan)) {
+            $plan->removeUser($this);
         }
 
         return $this;

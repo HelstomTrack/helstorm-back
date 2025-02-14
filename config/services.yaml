@@ -10,7 +10,11 @@ services:
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_created, method: onJwtCreated }
 
-
+    App\Service\OpenAiService:
+        arguments:
+            $httpClient: '@http_client'
+            $params: '@parameter_bag'
+            $apiKey: '%openai_api_key%'
     _defaults:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
