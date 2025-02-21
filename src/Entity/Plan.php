@@ -30,10 +30,17 @@ class Plan
     #[ORM\ManyToMany(targetEntity: Programs::class, inversedBy: 'plans')]
     private Collection $program;
 
+    /**
+     * @var Collection<int, PlanProgramDay>
+     */
+    #[ORM\OneToMany(targetEntity: PlanProgramDay::class, mappedBy: 'plan')]
+    private Collection $planProgramDays;
+
     public function __construct()
     {
         $this->program = new ArrayCollection();
         $this->user = new ArrayCollection();
+        $this->planProgramDays = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -97,6 +104,36 @@ class Plan
     public function removeProgram(Programs $program): static
     {
         $this->program->removeElement($program);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, PlanProgramDay>
+     */
+    public function getPlanProgramDays(): Collection
+    {
+        return $this->planProgramDays;
+    }
+
+    public function addPlanProgramDay(PlanProgramDay $planProgramDay): static
+    {
+        if (!$this->planProgramDays->contains($planProgramDay)) {
+            $this->planProgramDays->add($planProgramDay);
+            $planProgramDay->setPlan($this);
+        }
+
+        return $this;
+    }
+
+    public function removePlanProgramDay(PlanProgramDay $planProgramDay): static
+    {
+        if ($this->planProgramDays->removeElement($planProgramDay)) {
+            // set the owning side to null (unless already changed)
+            if ($planProgramDay->getPlan() === $this) {
+                $planProgramDay->setPlan(null);
+            }
+        }
 
         return $this;
     }

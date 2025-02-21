@@ -33,21 +33,24 @@ class Programs
     #[ORM\OneToMany(targetEntity: ProgramsExercises::class, mappedBy: 'program')]
     private Collection $programsExercises;
 
-    #[ORM\ManyToOne(inversedBy: 'program')]
-    private ?Plan $plan = null;
-
     /**
      * @var Collection<int, Plan>
      */
     #[ORM\ManyToMany(targetEntity: Plan::class, mappedBy: 'program')]
     private Collection $plans;
 
+    /**
+     * @var Collection<int, PlanProgramDay>
+     */
+    #[ORM\OneToMany(targetEntity: PlanProgramDay::class, mappedBy: 'program')]
+    private Collection $planProgramDays;
 
     public function __construct()
     {
         $this->userPrograms = new ArrayCollection();
         $this->programsExercises = new ArrayCollection();
         $this->plans = new ArrayCollection();
+        $this->planProgramDays = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -160,6 +163,36 @@ class Programs
     {
         if ($this->plans->removeElement($plan)) {
             $plan->removeProgram($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, PlanProgramDay>
+     */
+    public function getPlanProgramDays(): Collection
+    {
+        return $this->planProgramDays;
+    }
+
+    public function addPlanProgramDay(PlanProgramDay $planProgramDay): static
+    {
+        if (!$this->planProgramDays->contains($planProgramDay)) {
+            $this->planProgramDays->add($planProgramDay);
+            $planProgramDay->setProgram($this);
+        }
+
+        return $this;
+    }
+
+    public function removePlanProgramDay(PlanProgramDay $planProgramDay): static
+    {
+        if ($this->planProgramDays->removeElement($planProgramDay)) {
+            // set the owning side to null (unless already changed)
+            if ($planProgramDay->getProgram() === $this) {
+                $planProgramDay->setProgram(null);
+            }
         }
 
         return $this;

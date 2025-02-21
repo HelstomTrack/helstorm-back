@@ -2,11 +2,10 @@
 
 namespace App\Controller;
 
-use App\Entity\Plan;
+use App\Entity\PlanProgramDay;
 use App\Entity\Programs;
 use App\Entity\User;
 use App\Entity\UserMetrics;
-use App\Entity\UserPrograms;
 use App\Service\ProgramSelectorService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,32 +20,6 @@ class ProgramController extends AbstractController
         public ProgramSelectorService $programSelectorService
     )
     {
-    }
-
-    #[Route('/program/{id}', name: 'app_program_id', methods: ['GET'])]
-    public function getProgramId(int $id): JsonResponse
-    {
-        $program = $this->entityManager->getRepository(Programs::class)->find($id);
-
-        if (!$program) {
-            throw $this->createNotFoundException('Program not found');
-        }
-
-        $exercises = array_map(fn($programExercise) => [
-            'id' => $programExercise->getExercise()->getId(),
-            'name' => $programExercise->getExercise()->getName(),
-            'description' => $programExercise->getExercise()->getDescription(),
-            'rest_time' => $programExercise->getExercise()->getRestTime(),
-            'difficulty' => $programExercise->getExercise()->getDifficulty()
-        ], $program->getProgramsExercises()->toArray());
-
-        return new JsonResponse([
-            'program' => [
-                'id' => $program->getId(),
-                'name' => $program->getName(),
-                'exercises' => $exercises,
-            ],
-        ]);
     }
 
     #[Route('/program', name: 'app_program', methods: ['GET'])]
@@ -95,26 +68,22 @@ class ProgramController extends AbstractController
             return new JsonResponse(['error' => 'Metrics utilisateur non trouvées'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($user->getId() !== null) {
-            return new JsonResponse(['error' => 'l\'utilisateur à déjà un programme'], Response::HTTP_CONFLICT);
-        }
-        $program = $this->programSelectorService->getProgram(
+        $plan = $this->programSelectorService->getProgram(
             $userMetrics->getGoal(),
             $userMetrics->getWeight(),
             $userMetrics->getHeight()
         );
+        if (!$plan) {
+            return new JsonResponse(['error' => 'Aucun plan trouvé pour cet utilisateur'], Response::HTTP_NOT_FOUND);
+        }
 
-        $userProgram = new UserPrograms();
-        $userProgram->setPrograms($program);
-        $userProgram->setUser($user);
-
-        $entityManager->persist($userProgram);
+        $user->addPlan($plan);
         $entityManager->flush();
 
-        return new JsonResponse(['message' => 'Programme assigned'], Response::HTTP_CREATED);
+        return new JsonResponse(['message' => 'Programme assigné avec succès'], Response::HTTP_CREATED);
     }
 
-    #[Route('/program/user/{id}', name: 'app_program_goal', methods: ['GET'])]
+    #[Route('/program/user/{id}', name: 'app_program_goals', methods: ['GET'])]
     public function getUserPlan(int $id) : JsonResponse
     {
         $user = $this->entityManager->getRepository(User::class)->find($id);
@@ -125,6 +94,7 @@ class ProgramController extends AbstractController
         $data = array_map(fn($plan) => [
             'id' => $plan->getId(),
             'name' => $plan->getName(),
+
             'programs' => $plan->getProgram()->map(
                 fn($program) => [
                     'id' => $program->getId(),
@@ -137,12 +107,14 @@ class ProgramController extends AbstractController
                             'rest_time' => $programExercise->getExercise()->getRestTime(),
                             'difficulty' => $programExercise->getExercise()->getDifficulty()
                         ]
-                    )->toArray()
+                    )->toArray(),
+                    'day' => implode(', ', $program->getPlanProgramDays()->map(
+                        fn($planProgramDay) => $planProgramDay->getDayOfWeek()
+                    )->toArray()),
                 ]
             )->toArray(),
         ], $user->getPlans()->toArray());
 
         return new JsonResponse($data);
     }
-
 }

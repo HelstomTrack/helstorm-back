@@ -142,4 +142,9 @@ class UserController extends AbstractController
         }
         return new JsonResponse('user deleted', Response::HTTP_OK, ['accept' => 'json'], true);
     }
+
+    public function refresh(): JsonResponse
+    {
+        return new JsonResponse(['msg' => 'JWT refresh token not found'], Response::HTTP_UNAUTHORIZED);
+    }
 }
