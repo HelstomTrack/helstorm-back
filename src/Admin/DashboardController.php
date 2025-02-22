@@ -3,6 +3,7 @@
 namespace App\Admin;
 
 use App\Entity\Exercises;
+use App\Entity\Plan;
 use App\Entity\Programs;
 use App\Entity\ProgramsExercises;
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminDashboard;
@@ -35,6 +36,8 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::linkToCrud('Program', 'fa fa-tags', Programs::class);
         yield MenuItem::linkToCrud('ProgramExercice', 'fa fa-tags', ProgramsExercises::class);
         yield MenuItem::linkToCrud('Exercise', 'fa fa-tags', Exercises::class);
+        yield MenuItem::linkToCrud('Plan', 'fa fa-tags', Plan::class);
+
 
     }
 }

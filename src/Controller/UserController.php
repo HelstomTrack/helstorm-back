@@ -39,7 +39,7 @@ class UserController extends AbstractController
         content: new Model(type: User::class, groups: ['non_sensitive_data'])
     )]
     #[OA\Tag(name: 'User')]
-    #[Route('/api/user/register', name: 'app_user_post', methods: ['POST'])]
+    #[Route('/register', name: 'app_user_post', methods: ['POST'])]
     public function registration(UserPasswordHasherInterface $passwordHasher, Request $request, UserRepository $userRepository): Response
     {
         $data = json_decode($request->getContent(), true);
