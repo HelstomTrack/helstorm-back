@@ -17,7 +17,7 @@ services:
     volumes:
       - ./:/var/www/project/:cached
     ports:
-      - 10302:8080
+      - "8080:8080"  # Correction du port pour Railway
     networks:
       - symfony
     user: "root"
@@ -37,17 +37,17 @@ services:
       - symfony
 
   phpmyadmin:
-      image: phpmyadmin
-      restart: always
-      depends_on:
-        - db
-      ports:
-        - "8083:80"
-      environment:
-        PMA_HOST: db
-        MYSQL_ROOT_PASSWORD: root
-      networks:
-        - symfony
+    image: phpmyadmin
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "8083:80"
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: root
+    networks:
+      - symfony
 
 networks:
   symfony:
