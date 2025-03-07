@@ -17,7 +17,7 @@ services:
     volumes:
       - ./:/var/www/project/:cached
     ports:
-      - 10302:80
+      - 10302:8080
     networks:
       - symfony
     user: "root"
