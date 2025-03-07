@@ -22,7 +22,8 @@ class UserController extends AbstractController
 
     public function __construct
     (
-        public EntityManagerInterface $entityManager
+        public EntityManagerInterface $entityManager,
+        public ProgramController $programController,
     )
     {
     }
@@ -74,7 +75,11 @@ class UserController extends AbstractController
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
-        return new JsonResponse(['message' => 'Registration successful'], 201);
+        if ($this->programController->createUserWithProgram($user->getId(), $this->entityManager)) {
+            return new JsonResponse(['message' => 'Registration successful'], Response::HTTP_CREATED);
+        } else {
+            return new JsonResponse(['error' => 'No plan found for this user'], Response::HTTP_NOT_FOUND);
+        }
     }
 
     /***

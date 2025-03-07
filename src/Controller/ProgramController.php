@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\PlanProgramDay;
 use App\Entity\Programs;
 use App\Entity\User;
 use App\Entity\UserMetrics;

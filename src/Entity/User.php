@@ -62,9 +62,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\ManyToMany(targetEntity: Plan::class, mappedBy: 'user')]
     private Collection $plans;
 
+    /**
+     * @var Collection<int, Diet>
+     */
+    #[ORM\ManyToMany(targetEntity: Diet::class, mappedBy: 'user')]
+    #[Groups(['diet'])]
+    private Collection $diets;
+
     public function __construct()
     {
         $this->plans = new ArrayCollection();
+        $this->diets = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -217,6 +225,33 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if ($this->plans->removeElement($plan)) {
             $plan->removeUser($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Diet>
+     */
+    public function getDiets(): Collection
+    {
+        return $this->diets;
+    }
+
+    public function addDiet(Diet $diet): static
+    {
+        if (!$this->diets->contains($diet)) {
+            $this->diets->add($diet);
+            $diet->addUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDiet(Diet $diet): static
+    {
+        if ($this->diets->removeElement($diet)) {
+            $diet->removeUser($this);
         }
 
         return $this;

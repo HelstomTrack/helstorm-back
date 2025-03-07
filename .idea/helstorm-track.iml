@@ -99,17 +99,8 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/twig/twig" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/webmozart/assert" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/zircote/swagger-php" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/phpdocumentor 2/reflection-common" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/phpdocumentor 2/reflection-docblock" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/phpdocumentor 2/type-resolver" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/phpstan 2/phpdoc-parser" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/http-client" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/http-client-contracts" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/twig 2/extra-bundle" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/twig 2/html-extra" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/twig 2/twig" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/webmozart 2/assert" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/gesdinet 2/jwt-refresh-token-bundle" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/gesdinet/jwt-refresh-token-bundle" />
     </content>
     <orderEntry type="inheritedJdk" />
