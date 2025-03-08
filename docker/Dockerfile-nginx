@@ -1,12 +1,17 @@
 # Dockerfile-nginx
 FROM nginx:latest
 
-# Copie la config Nginx (avec la directive "listen" adaptée)
+# Copie la config Nginx (default.conf)
+# ATTENTION au chemin source : s'il est dans "build/nginx",
+# il faut que ce répertoire soit visible dans le "context" du build Docker.
 COPY build/nginx/default.conf /etc/nginx/conf.d/default.conf
 
-# Création du dossier de ton app (même chemin que dans la conf Nginx)
+# Copie de tout le projet Symfony (y compris public/, src/, etc.)
+# pour que Nginx puisse servir les assets, CSS, etc.
 RUN mkdir -p /var/www/project
 WORKDIR /var/www/project
+COPY . /var/www/project
+
 EXPOSE 8080
 
 # Lancement de nginx

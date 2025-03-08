@@ -1,34 +1,74 @@
+##
 # Dockerfile-php
+##
 FROM php:8.2-fpm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        git \
-        zlib1g-dev \
-        libxml2-dev \
-        libpng-dev \
-        libzip-dev \
-        unzip \
-        # ...ajoute ici ce dont tu as besoin...
+    git \
+    zlib1g-dev \
+    libxml2-dev \
+    libpng-dev \
+    libzip-dev \
+    vim curl debconf subversion apt-transport-https apt-utils \
+    build-essential locales acl mailutils wget nodejs zip unzip \
+    gnupg gnupg1 gnupg2 \
+    sudo \
+    ssh \
     && docker-php-ext-install \
         pdo_mysql \
         soap \
         zip \
+        opcache \
         gd \
         intl
 
-COPY build/php/opcache.ini /usr/local/etc/php/conf.d/
-COPY build/php/custom.ini   /usr/local/etc/php/conf.d/
-RUN curl -sS https://getcomposer.org/installer | php && mv composer.phar /usr/local/bin/composer
-# RUN composer self-update 1.9.0
+# Copie de votre config PHP (opcache.ini / custom.ini)
+COPY docker/build/php/opcache.ini /usr/local/etc/php/conf.d/
+COPY docker/build/php/custom.ini  /usr/local/etc/php/conf.d/
+
+# Installer Composer & PHPUnit
+RUN curl -sS https://getcomposer.org/installer | php \
+    && mv composer.phar /usr/local/bin/composer
+
+RUN wget --no-check-certificate https://phar.phpunit.de/phpunit-6.5.3.phar \
+    && mv phpunit*.phar phpunit.phar \
+    && chmod +x phpunit.phar \
+    && mv phpunit.phar /usr/local/bin/phpunit
+
+# Ajuster droits et utilisateurs
+RUN usermod -u 1000 www-data \
+    && usermod -a -G www-data root \
+    && mkdir -p /var/www \
+    && chown -R www-data:www-data /var/www \
+    && mkdir -p /var/www/.composer \
+    && chown -R www-data:www-data /var/www/.composer
 
 WORKDIR /var/www/project
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-scripts --no-progress --no-interaction --optimize-autoloader
 
+##
+# 1) Copier SEULEMENT composer.json / composer.lock pour profiter du cache Docker
+#    et exécuter "composer install" SANS les scripts (sinon bin/console manquant).
+##
+COPY composer.json composer.lock ./
+RUN composer install \
+    --no-dev \
+    --optimize-autoloader \
+    --ignore-platform-reqs \
+    --no-scripts
+
+##
+# 2) Copier tout le code (src/, bin/, config/, public/, etc.)
+#    y compris bin/console
+##
 COPY . /var/www/project
 
-RUN chown -R www-data:www-data /var/www/project
+##
+# 3) Exécuter les scripts post-install (Flex, cache:clear, etc.)
+#    Maintenant que bin/console est présent.
+##
+RUN composer run-script post-install-cmd
+#  OU, si vous préférez relancer un full "composer install" :
+# RUN composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 
 EXPOSE 9000
-
 CMD ["php-fpm"]

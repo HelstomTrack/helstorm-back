@@ -3,10 +3,10 @@ version: "3.8"
 services:
   fpm:
     build:
-      context: ./docker
-      dockerfile: Dockerfile-php
-    volumes:
-      - ./:/var/www/project/:cached
+      context: .
+      dockerfile: docker/Dockerfile-php
+    # volumes:
+    #   - ./:/var/www/project/:cached
     networks:
       - symfony
 
@@ -14,10 +14,10 @@ services:
     build:
       context: ./docker
       dockerfile: Dockerfile-nginx
-    volumes:
-      - ./:/var/www/project/:cached
+    # volumes:
+    #   - ./:/var/www/project/:cached
     ports:
-      - "8080:8080"  # Correction du port pour Railway
+      - "8080:8080"
     networks:
       - symfony
     user: "root"
@@ -32,7 +32,6 @@ services:
       MYSQL_PASSWORD: SiNZmZISZoXIxISxGJVykNhBNSQibndk
       MYSQL_ROOT_PASSWORD: SiNZmZISZoXIxISxGJVykNhBNSQibndk
       MYSQL_DATABASE: railway
-
     networks:
       - symfony
 
