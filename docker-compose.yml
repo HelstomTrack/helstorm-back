@@ -6,7 +6,7 @@ services:
       context: ./docker
       dockerfile: Dockerfile-php
     volumes:
-      - ./:/var/www/project/:cached
+      - ./:/app:cached
     networks:
       - symfony
 
@@ -15,7 +15,7 @@ services:
       context: ./docker
       dockerfile: Dockerfile-nginx
     volumes:
-      - ./:/var/www/project/:cached
+      - ./:/app:cached
     ports:
       - 10302:8080
     networks:
