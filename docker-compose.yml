@@ -17,7 +17,7 @@ services:
     volumes:
       - ./:/app:cached
     ports:
-      - 10302:8080
+      - 443:443
     networks:
       - symfony
     user: "root"
