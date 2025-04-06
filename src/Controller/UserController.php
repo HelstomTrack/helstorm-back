@@ -3,7 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\User;
-use App\Entity\UserMetrics;
+use App\Manager\UserManager;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -41,44 +41,21 @@ class UserController extends AbstractController
     )]
     #[OA\Tag(name: 'User')]
     #[Route('/register', name: 'app_user_post', methods: ['POST'])]
-    public function registration(UserPasswordHasherInterface $passwordHasher, Request $request, UserRepository $userRepository): Response
+    public function registration(Request $request, UserManager $userManager): Response
     {
         $data = json_decode($request->getContent(), true);
 
-        if (!isset($data['email'], $data['password'], $data['firstname'], $data['lastname'], $data['phone'], $data['age'], $data['weight'], $data['height'], $data['goal'], $data['level'], $data['gender'])) {
-            return new JsonResponse(['error' => 'Missing required fields'], Response::HTTP_BAD_REQUEST);
+        try {
+            $user = $userManager->register($data);
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }
-
-        if ($userRepository->findByEmailOrPhoneNumber($data['email'], $data['phone'])) {
-            return new JsonResponse(['error' => 'User already exists'], Response::HTTP_BAD_REQUEST);
-        }
-
-        $userMetrics = (new UserMetrics())
-            ->setAge($data['age'])
-            ->setWeight($data['weight'])
-            ->setHeight($data['height'])
-            ->setGoal($data['goal'])
-            ->setLevel($data['level'])
-            ->setGender($data['gender']);
-
-        $user = (new User())
-            ->setEmail($data['email'])
-            ->setFirstname($data['firstname'])
-            ->setLastname($data['lastname'])
-            ->setPhone($data['phone'])
-            ->setUserMetrics($userMetrics);
-
-        $user->setPassword(
-            $passwordHasher->hashPassword($user, $data['password'])
-        );
-        $this->entityManager->persist($user);
-        $this->entityManager->flush();
 
         if ($this->programController->createUserWithProgram($user->getId(), $this->entityManager)) {
-            return new JsonResponse(['message' => 'Registration successful'], Response::HTTP_CREATED);
-        } else {
-            return new JsonResponse(['error' => 'No plan found for this user'], Response::HTTP_NOT_FOUND);
+            return $this->json(['message' => 'Registration successful'], Response::HTTP_CREATED);
         }
+
+        return $this->json(['error' => 'No plan found for this user'], Response::HTTP_NOT_FOUND);
     }
 
     /***

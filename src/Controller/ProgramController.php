@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\Programs;
 use App\Entity\User;
 use App\Entity\UserMetrics;
 use App\Service\ProgramSelectorService;
@@ -21,40 +20,11 @@ class ProgramController extends AbstractController
     {
     }
 
-    #[Route('/program', name: 'app_program', methods: ['GET'])]
-    public function getAllProgram(): JsonResponse
-    {
-        $programs = $this->entityManager->getRepository(Programs::class)->findAll();
-
-        if (!$programs) {
-            throw $this->createNotFoundException('No programs found');
-        }
-
-        $data = array_map(function ($program) {
-            $exercises = $program->getProgramsExercises()->map(function ($programExercise) {
-                $exercise = $programExercise->getExercise();
-                return [
-                    'id' => $exercise->getId(),
-                    'name' => $exercise->getName(),
-                    'description' => $exercise->getDescription(),
-                    'rest_time' => $exercise->getRestTime(),
-                    'difficulty' => $exercise->getDifficulty(),
-                    'category' => $exercise->getCategory(),
-                    'series' => $exercise->getSeries(),
-                    'calories' => $exercise->getCalories()
-                ];
-            })->toArray();
-
-            return [
-                'id' => $program->getId(),
-                'name' => $program->getName(),
-                'exercises' => $exercises
-            ];
-        }, $programs);
-
-        return new JsonResponse($data);
-    }
-
+    /**
+     * @param int $id
+     * @param EntityManagerInterface $entityManager
+     * @return JsonResponse
+     */
     #[Route('/api/program/assign/{id}', name: 'app_program_goal', methods: ['POST'])]
     public function createUserWithProgram(int $id, EntityManagerInterface $entityManager): JsonResponse
     {
