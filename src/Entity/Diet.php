@@ -33,10 +33,18 @@ class Diet
     #[Groups(['diet'])]
     private Collection $meals;
 
+    /**
+     * @var Collection<int, Day>
+     */
+    #[ORM\OneToMany(targetEntity: Day::class, mappedBy: 'diet')]
+    #[Groups(['diet'])]
+    private Collection $days;
+
     public function __construct()
     {
         $this->user = new ArrayCollection();
         $this->meals = new ArrayCollection();
+        $this->days = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -102,6 +110,36 @@ class Diet
     {
         if ($this->meals->removeElement($meal)) {
             $meal->removeDiet($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Day>
+     */
+    public function getDays(): Collection
+    {
+        return $this->days;
+    }
+
+    public function addDay(Day $day): static
+    {
+        if (!$this->days->contains($day)) {
+            $this->days->add($day);
+            $day->setDiet($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDay(Day $day): static
+    {
+        if ($this->days->removeElement($day)) {
+            // set the owning side to null (unless already changed)
+            if ($day->getDiet() === $this) {
+                $day->setDiet(null);
+            }
         }
 
         return $this;

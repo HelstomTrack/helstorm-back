@@ -37,6 +37,7 @@ class Meal
      * @var Collection<int, Food>
      */
     #[ORM\ManyToMany(targetEntity: Food::class, inversedBy: 'meals')]
+    #[Groups(['diet'])]
     private Collection $food;
 
     /**
@@ -45,10 +46,17 @@ class Meal
     #[ORM\ManyToMany(targetEntity: Diet::class, inversedBy: 'meals')]
     private Collection $diet;
 
+    /**
+     * @var Collection<int, Day>
+     */
+    #[ORM\ManyToMany(targetEntity: Day::class, mappedBy: 'meals')]
+    private Collection $days;
+
     public function __construct()
     {
         $this->food = new ArrayCollection();
         $this->diet = new ArrayCollection();
+        $this->days = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -160,6 +168,33 @@ class Meal
     public function removeDiet(Diet $diet): static
     {
         $this->diet->removeElement($diet);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Day>
+     */
+    public function getDays(): Collection
+    {
+        return $this->days;
+    }
+
+    public function addDay(Day $day): static
+    {
+        if (!$this->days->contains($day)) {
+            $this->days->add($day);
+            $day->addMeal($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDay(Day $day): static
+    {
+        if ($this->days->removeElement($day)) {
+            $day->removeMeal($this);
+        }
 
         return $this;
     }

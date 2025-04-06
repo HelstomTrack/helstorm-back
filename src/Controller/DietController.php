@@ -2,8 +2,9 @@
 
 namespace App\Controller;
 
+use App\Entity\Day;
 use App\Entity\Diet;
-use App\Entity\User;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -28,18 +29,55 @@ class DietController extends AbstractController
         return new JsonResponse($dietSerialized, Response::HTTP_OK, ['accept' => 'json'], true);
     }
 
-    #[Route('/diet/user/{id}', name: 'app_diet_user', methods: ['GET'])]
-    public function getUserDiet(SerializerInterface $serializer, int $id): JsonResponse
+    #[Route('/day', name: 'app_day_id', methods: ['GET'])]
+    public function getDay(SerializerInterface $serializer): JsonResponse
     {
-        $user = $this->entityManager->getRepository(User::class)->find($id);
-        if (!$user) {
-            return new JsonResponse(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+        $day = $this->entityManager->getRepository(Day::class)->findAll();
+        $serializedDay = $serializer->serialize($day, 'json', ['groups' => 'day']);
+        if (!$day) {
+            return new JsonResponse(['error' => 'Day not found'], Response::HTTP_NOT_FOUND);
         }
-
-        $diet = $user->getDiets();
-        $dietSerialized = $serializer->serialize($diet, 'json', ['groups' => 'diet']);
-
-        return new JsonResponse($dietSerialized, Response::HTTP_OK, ['accept' => 'json'], true);
+        return new JsonResponse($serializedDay, Response::HTTP_OK, ['accept' => 'json'], true);
     }
 
+    #[Route('/dayy/{userId}', methods: ['GET'])]
+    public function getDietsByUser(
+        int $userId,
+        UserRepository $userRepository
+    ): JsonResponse {
+        $user = $userRepository->find($userId);
+
+        if (!$user) {
+            throw $this->createNotFoundException('Utilisateur non trouvé.');
+        }
+
+        $diets = $user->getDiets();
+
+        $response = [];
+
+        foreach ($diets as $diet) {
+            $daysStructure = [];
+
+            foreach ($diet->getDays() as $day) {
+                $daysStructure[$day->getName()] = [];
+
+                foreach ($day->getMeals() as $meal) {
+                    $daysStructure[$day->getName()][] = [
+                        'name' => $meal->getName(),
+                        'total_calories' => $meal->getTotalCalories(),
+                        'food' => array_map(
+                            fn($food) => ['name' => $food->getName()],
+                            $meal->getFood()->toArray()
+                        ),
+                    ];
+                }
+            }
+            $response[] = [
+                'name' => $diet->getName(),
+                'days' => $daysStructure,
+            ];
+        }
+
+        return $this->json($response);
+    }
 }

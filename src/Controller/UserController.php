@@ -68,7 +68,6 @@ class UserController extends AbstractController
             ->setPhone($data['phone'])
             ->setUserMetrics($userMetrics);
 
-        // hash the password (based on the security.yaml config for the $user class)
         $user->setPassword(
             $passwordHasher->hashPassword($user, $data['password'])
         );
