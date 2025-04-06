@@ -28,10 +28,10 @@ services:
     volumes:
       - db-data:/var/lib/mysql
     environment:
-      MYSQL_USER: ide
-      MYSQL_PASSWORD: ide
-      MYSQL_ROOT_PASSWORD: 'root'
-      MYSQL_DATABASE: helstorm
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
 
     networks:
       - symfony
