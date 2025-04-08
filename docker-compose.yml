@@ -17,6 +17,7 @@ services:
       dockerfile: Dockerfile-nginx
     volumes:
       - ./:/var/www/project/:cached
+      - ./cert:/etc/nginx/certs:ro
     ports:
       - 10302:443
     networks:
