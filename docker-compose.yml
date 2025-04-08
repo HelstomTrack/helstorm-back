@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile-php
     volumes:
       - ./:/var/www/project/:cached
-      - /etc/letsencrypt:/etc/nginx/certs:ro
+      - ./cert:/etc/nginx/certs:ro
     networks:
       - symfony
 
