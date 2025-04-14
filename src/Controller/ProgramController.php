@@ -2,14 +2,17 @@
 
 namespace App\Controller;
 
+use App\Entity\Programs;
 use App\Entity\User;
 use App\Entity\UserMetrics;
 use App\Service\ProgramSelectorService;
 use Doctrine\ORM\EntityManagerInterface;
+use Nelmio\ApiDocBundle\Attribute\Model;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use OpenApi\Attributes as OA;
 
 class ProgramController extends AbstractController
 {
@@ -25,6 +28,12 @@ class ProgramController extends AbstractController
      * @param EntityManagerInterface $entityManager
      * @return JsonResponse
      */
+    #[OA\Response(
+        response: 201,
+        description: 'Successful response',
+        content: new Model(type: Programs::class, groups: ['program'])
+    )]
+    #[OA\Tag(name: 'Program')]
     #[Route('/api/program/assign/{id}', name: 'app_program_goal', methods: ['POST'])]
     public function createUserWithProgram(int $id, EntityManagerInterface $entityManager): JsonResponse
     {
@@ -52,7 +61,13 @@ class ProgramController extends AbstractController
         return new JsonResponse(['message' => 'Programme assigné avec succès'], Response::HTTP_CREATED);
     }
 
-    #[Route('/program/user/{id}', name: 'app_program_goals', methods: ['GET'])]
+    #[OA\Response(
+        response: 200,
+        description: 'Successful response',
+        content: new Model(type: Programs::class, groups: ['program'])
+    )]
+    #[OA\Tag(name: 'Program')]
+    #[Route('/api/program/user/{id}', name: 'app_program_goalss', methods: ['GET'])]
     public function getUserPlan(int $id) : JsonResponse
     {
         $user = $this->entityManager->getRepository(User::class)->find($id);

@@ -1,11 +1,13 @@
 nelmio_api_doc:
   use_validation_groups: true
-
+  areas:
+    default:
+      path_patterns: ['^/api(?!/token/refresh).*']
   documentation:
     servers:
-      - url: http://localhost:10302
+      - url: http://localhost:443
         description: API over HTTP
-      - url: http://localhost:10302
+      - url: http://localhost:443
         description: API over HTTPS
     info:
       title: Helstorm-track
