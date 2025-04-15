@@ -25,8 +25,8 @@ services:
     user: "root"
 
   db:
-    image: mysql
-    restart: always
+    image: mysql:8.0
+    restart: unless-stopped
     ports:
       - "3306:3306"
     volumes:
