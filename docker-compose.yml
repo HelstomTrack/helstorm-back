@@ -7,6 +7,7 @@ services:
       dockerfile: Dockerfile-php
     volumes:
       - ./:/var/www/project/:cached
+      - ./cert:/etc/nginx/certs:ro
     networks:
       - symfony
 
@@ -16,15 +17,18 @@ services:
       dockerfile: Dockerfile-nginx
     volumes:
       - ./:/var/www/project/:cached
+      - ./cert:/etc/nginx/certs:ro
     ports:
-      - 10302:443
+      - 443:443
     networks:
       - symfony
     user: "root"
 
   db:
-    image: mysql
-    restart: always
+    image: mysql:8.0
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
     volumes:
       - db-data:/var/lib/mysql
     environment:
@@ -32,22 +36,8 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-
     networks:
       - symfony
-
-  phpmyadmin:
-      image: phpmyadmin
-      restart: always
-      depends_on:
-        - db
-      ports:
-        - "8083:80"
-      environment:
-        PMA_HOST: db
-        MYSQL_ROOT_PASSWORD: root
-      networks:
-        - symfony
 
 networks:
   symfony:
