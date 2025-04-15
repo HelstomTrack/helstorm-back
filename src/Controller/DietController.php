@@ -39,7 +39,7 @@ class DietController extends AbstractController
         $user = $userRepository->find($userId);
 
         if (!$user) {
-            throw $this->createNotFoundException('Utilisateur non trouvé.');
+            throw $this->createNotFoundException('User not found.');
         }
 
         $response = array_map(fn($diet) => $this->formatDiet($diet), $user->getDiets()->toArray());

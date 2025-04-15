@@ -41,9 +41,9 @@ class ProgramController extends AbstractController
         $userMetrics = $entityManager->getRepository(UserMetrics::class)->findOneBy(['user' => $user]);
 
         if (!$user) {
-            return new JsonResponse(['error' => 'Utilisateur non trouvé'], Response::HTTP_NOT_FOUND);
+            return new JsonResponse(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
         } elseif (!$userMetrics) {
-            return new JsonResponse(['error' => 'Metrics utilisateur non trouvées'], Response::HTTP_NOT_FOUND);
+            return new JsonResponse(['error' => 'Metrics user not found'], Response::HTTP_NOT_FOUND);
         }
 
         $plan = $this->programSelectorService->getProgram(
@@ -52,13 +52,13 @@ class ProgramController extends AbstractController
             $userMetrics->getHeight()
         );
         if (!$plan) {
-            return new JsonResponse(['error' => 'Aucun plan trouvé pour cet utilisateur'], Response::HTTP_NOT_FOUND);
+            return new JsonResponse(['error' => 'None plan found for this user'], Response::HTTP_NOT_FOUND);
         }
 
         $user->addPlan($plan);
         $entityManager->flush();
 
-        return new JsonResponse(['message' => 'Programme assigné avec succès'], Response::HTTP_CREATED);
+        return new JsonResponse(['message' => 'Plan assigned with success'], Response::HTTP_CREATED);
     }
 
     #[OA\Response(
@@ -72,7 +72,7 @@ class ProgramController extends AbstractController
     {
         $user = $this->entityManager->getRepository(User::class)->find($id);
         if (!$user) {
-            return new JsonResponse(['error' => 'Utilisateur non trouvé'], Response::HTTP_NOT_FOUND);
+            return new JsonResponse(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
         $data = array_map(fn($plan) => [

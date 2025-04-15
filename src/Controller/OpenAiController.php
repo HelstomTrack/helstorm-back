@@ -38,7 +38,7 @@ class OpenAiController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         if (!isset($data['message'])) {
-            return new JsonResponse(['error' => 'Le champ "message" est requis'], 400);
+            return new JsonResponse(['error' => 'The field "message" is required'], 400);
         }
 
         $response = $this->openAiService->askChatGPT($data['message']);
