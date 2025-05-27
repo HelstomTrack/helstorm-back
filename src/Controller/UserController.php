@@ -44,7 +44,6 @@ class UserController extends AbstractController
     public function registration(Request $request, UserManager $userManager): Response
     {
         $data = json_decode($request->getContent(), true);
-
         try {
             $user = $userManager->register($data);
         } catch (\InvalidArgumentException $e) {
