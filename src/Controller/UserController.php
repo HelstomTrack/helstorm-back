@@ -43,8 +43,8 @@ class UserController extends AbstractController
     #[Route('/register', name: 'app_user_post', methods: ['POST'])]
     public function registration(Request $request, UserManager $userManager): Response
     {
+        global $e;
         $data = json_decode($request->getContent(), true);
-
         try {
             $user = $userManager->register($data);
         } catch (\InvalidArgumentException $e) {
