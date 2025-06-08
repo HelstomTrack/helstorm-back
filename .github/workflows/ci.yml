@@ -88,7 +88,7 @@ jobs:
         run: rm -rf config/jwt
 
       - name: PHP Code Sniffer
-        run: vendor/bin/phpcs
+        run: vendor/bin/phpcs src tests
 
       - name: PHPStan Analysis
         run: vendor/bin/phpstan analyse src tests
