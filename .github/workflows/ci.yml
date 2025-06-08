@@ -59,6 +59,11 @@ jobs:
         run: |
           mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS helstorm_test_test;"
 
+      - name: Grant privileges to user 'ide' on helstorm_test_test
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -proot -e "GRANT ALL PRIVILEGES ON helstorm_test_test.* TO 'ide'@'%'; FLUSH PRIVILEGES;"
+
+
       - name: Generate JWT keys
         run: |
           mkdir -p config/jwt
