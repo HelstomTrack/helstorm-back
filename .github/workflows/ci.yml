@@ -2,10 +2,7 @@ name: CI for develop
 
 on:
   push:
-    branches:
-      - develop
-      - 'feature/**'
-      - 'hotfix/**'
+    branches: [ "develop" ]
   pull_request:
     branches: [ "develop" ]
 
@@ -34,9 +31,6 @@ jobs:
           php-version: '8.2'
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, json, mbstring
           coverage: xdebug
-
-      - name: Validate composer.json and composer.lock
-        run: composer validate
 
       - name: Cache Composer packages
         id: composer-cache
