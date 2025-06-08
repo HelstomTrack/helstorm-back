@@ -1,10 +1,14 @@
-name: CI for develop
+name: CI for develop and feature branches
 
 on:
   push:
-    branches: [ "develop" ]
+    branches:
+      - develop
+      - 'feature/**'
+      - 'hotfix/**'
   pull_request:
-    branches: [ "develop" ]
+    branches:
+      - develop
 
 jobs:
   build-test:
