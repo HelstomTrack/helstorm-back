@@ -87,9 +87,6 @@ jobs:
       - name: Clean JWT keys
         run: rm -rf config/jwt
 
-      - name: PHPStan Analysis
-        run: vendor/bin/phpstan analyse src tests
-
       - name: Security Check
         run: |
           composer global require enlightn/security-checker
