@@ -1,0 +1,80 @@
+name: CI for develop
+
+on:
+  push:
+    branches: [ "develop" ]
+  pull_request:
+    branches: [ "develop" ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: helstorm_test
+          MYSQL_USER: ide
+          MYSQL_PASSWORD: ide
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping --silent" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, json, mbstring
+          coverage: xdebug
+
+      - name: Validate composer.json and composer.lock
+        run: composer validate --strict
+
+      - name: Cache Composer packages
+        id: composer-cache
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Wait for MySQL
+        run: |
+          until mysqladmin ping -h 127.0.0.1 -uide -pide --silent; do
+            echo "Waiting for MySQL..."
+            sleep 3
+          done
+
+      - name: Generate JWT keys
+        run: |
+          mkdir -p config/jwt
+          openssl genpkey -out config/jwt/private.pem -aes256 -algorithm rsa -pkeyopt rsa_keygen_bits:4096 -pass pass:${{ secrets.JWT_PASSPHRASE }}
+          openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout -passin pass:${{ secrets.JWT_PASSPHRASE }}
+
+      - name: Run test suite
+        run: composer test
+        env:
+          DATABASE_URL: mysql://ide:ide@127.0.0.1:3306/helstorm_test
+
+      - name: Clean JWT keys
+        run: rm -rf config/jwt
+
+      - name: PHP Code Sniffer
+        run: vendor/bin/phpcs
+
+      - name: PHPStan Analysis
+        run: vendor/bin/phpstan analyse src tests
+
+      - name: Security Check
+        run: |
+          composer global require enlightn/security-checker
+          ~/.composer/vendor/bin/security-checker security:check
