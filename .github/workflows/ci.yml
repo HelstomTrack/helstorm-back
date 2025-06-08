@@ -29,6 +29,9 @@ jobs:
     env:
       APP_ENV: test
       DATABASE_URL: mysql://ide:ide@127.0.0.1:3306/helstorm_test
+      JWT_SECRET_KEY: config/jwt/private.pem
+      JWT_PUBLIC_KEY: config/jwt/public.pem
+      JWT_PASSPHRASE: ${{ secrets.JWT_PASSPHRASE }}
 
     steps:
       - uses: actions/checkout@v3
