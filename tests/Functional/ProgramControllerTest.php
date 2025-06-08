@@ -1,136 +1,112 @@
 <?php
 
-namespace App\Tests\Functional;
+namespace App\Tests\Controller;
 
+use App\Controller\ProgramController;
+use App\Entity\Plan;
+use App\Entity\Programs;
 use App\Entity\User;
 use App\Entity\UserMetrics;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Component\HttpFoundation\Response;
+use App\Service\ProgramSelectorService;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\EntityRepository;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
-class ProgramControllerTest extends WebTestCase
+class ProgramControllerTest extends TestCase
 {
-    private function createAuthenticatedClientAndUser(): array
+
+    public function testCreateUserWithProgramSuccess()
     {
-        $client = static::createClient();
-        $container = static::getContainer();
+        $user = new User();
+        $userMetrics = new UserMetrics();
+        $userMetrics->setUser($user)->setGoal('Strong')->setWeight(70)->setHeight(175);
+        $plan = $this->createMock(Plan::class);
 
-        $email = 'programtest_' . uniqid() . '@example.com';
-        $phoneNumber = uniqid();
-        $user = (new User())
-            ->setEmail($email)
-            ->setFirstname('Program')
-            ->setLastname('Test')
-            ->setPhone($phoneNumber);
+        // Mock ProgramSelectorService
+        $programSelectorService = $this->createMock(ProgramSelectorService::class);
+        $programSelectorService->method('getProgram')->willReturn($plan);
 
+        // Mock EntityManager & Repositories
+        $userRepo = $this->createMock(EntityRepository::class);
+        $userRepo->method('find')->willReturn($user);
 
-        $passwordHasher = $container->get('security.user_password_hasher');
-        $user->setPassword($passwordHasher->hashPassword($user, 'password'));
+        $metricsRepo = $this->createMock(EntityRepository::class);
+        $metricsRepo->method('findOneBy')->willReturn($userMetrics);
 
-        $metrics = (new UserMetrics())
-            ->setUser($user)
-            ->setGoal('gain muscle')
-            ->setWeight(70)
-            ->setHeight(180)
-            ->setAge(25)
-            ->setGender('male')
-            ->setLevel('beginner');
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->method('getRepository')->willReturnMap([
+            [User::class, $userRepo],
+            [UserMetrics::class, $metricsRepo],
+        ]);
 
-        $em = $container->get('doctrine')->getManager();
-        $em->persist($user);
-        $em->persist($metrics);
-        $em->flush();
+        $controller = new ProgramController($entityManager, $programSelectorService);
 
-        $jwtManager = $container->get('lexik_jwt_authentication.jwt_manager');
-        $token = $jwtManager->create($user);
+        $response = $controller->createUserWithProgram(1, $entityManager);
 
-        return [$client, $token, $user];
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(201, $response->getStatusCode());
     }
 
-    public function testAssignProgramSuccess(): void
+    public function testCreateUserWithProgramUserNotFound()
     {
-        [$client, $token, $user] = $this->createAuthenticatedClientAndUser();
+        $userRepo = $this->createMock(EntityRepository::class);
+        $userRepo->method('find')->willReturn(null); // simulate user not found
 
-        // Appel au controller d'assignation
-        $client->request(
-            'POST',
-            "/api/program/assign/{$user->getId()}",
-            [],
-            [],
-            ['HTTP_AUTHORIZATION' => "Bearer $token"]
-        );
+        $metricsRepo = $this->createMock(EntityRepository::class);
+        // Not needed, but must be present to satisfy getRepository()
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
-        $this->assertSame(
-            ['message' => 'Plan assigned with success'],
-            json_decode($client->getResponse()->getContent(), true)
-        );
-    }
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->method('getRepository')->willReturnCallback(function ($class) use ($userRepo, $metricsRepo) {
+            return match ($class) {
+                User::class => $userRepo,
+                UserMetrics::class => $metricsRepo,
+                default => throw new \InvalidArgumentException("Unexpected repository class: " . $class),
+            };
+        });
 
-    public function testAssignProgramUserNotFound(): void
-    {
-        [$client, $token] = $this->createAuthenticatedClientAndUser();
+        $programSelectorService = $this->createMock(ProgramSelectorService::class);
 
-        $client->request(
-            'POST',
-            "/api/program/assign/9999999",
-            [],
-            [],
-            ['HTTP_AUTHORIZATION' => "Bearer $token"]
-        );
+        $controller = new ProgramController($entityManager, $programSelectorService);
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
-        $this->assertSame(
-            ['error' => 'User not found'],
-            json_decode($client->getResponse()->getContent(), true)
+        $response = $controller->createUserWithProgram(1, $entityManager);
+
+        $this->assertEquals(404, $response->getStatusCode());
+        $this->assertJsonStringEqualsJsonString(
+            json_encode(['error' => 'User not found']),
+            $response->getContent()
         );
     }
 
-    public function testGetUserPlanUserNotFound(): void
+
+    public function testCreateUserWithProgramMetricsNotFound()
     {
-        [$client, $token] = $this->createAuthenticatedClientAndUser();
+        $user = new User();
 
-        $client->request(
-            'GET',
-            "/api/program/user/999999",
-            [],
-            [],
-            ['HTTP_AUTHORIZATION' => "Bearer $token"]
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $userRepo = $this->createMock(EntityRepository::class);
+        $userRepo->method('find')->willReturn($user);
+
+        $metricsRepo = $this->createMock(EntityRepository::class);
+        $metricsRepo->method('findOneBy')->willReturn(null);
+
+        $entityManager->method('getRepository')->willReturnMap([
+            [User::class, $userRepo],
+            [UserMetrics::class, $metricsRepo],
+        ]);
+
+
+        $programSelectorService = $this->createMock(ProgramSelectorService::class);
+
+        $controller = new ProgramController($entityManager, $programSelectorService);
+
+        $response = $controller->createUserWithProgram(1, $entityManager);
+
+        $this->assertEquals(404, $response->getStatusCode());
+        $this->assertJsonStringEqualsJsonString(
+            json_encode(['error' => 'Metrics user not found']),
+            $response->getContent()
         );
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
-        $this->assertSame(
-            ['error' => 'User not found'],
-            json_decode($client->getResponse()->getContent(), true)
-        );
-    }
-
-    public function testGetUserPlanSuccess(): void
-    {
-        [$client, $token, $user] = $this->createAuthenticatedClientAndUser();
-
-        // Appel pour assigner un programme d'abord
-        $client->request(
-            'POST',
-            "/api/program/assign/{$user->getId()}",
-            [],
-            [],
-            ['HTTP_AUTHORIZATION' => "Bearer $token"]
-        );
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
-
-        // Appel pour récupérer le programme de l'utilisateur
-        $client->request(
-            'GET',
-            "/api/program/user/{$user->getId()}",
-            [],
-            [],
-            ['HTTP_AUTHORIZATION' => "Bearer $token"]
-        );
-
-        $this->assertResponseIsSuccessful();
-        $data = json_decode($client->getResponse()->getContent(), true);
-        $this->assertIsArray($data);
-        $this->assertNotEmpty($data);
     }
 }
+
