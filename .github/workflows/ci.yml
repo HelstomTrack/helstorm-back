@@ -57,7 +57,7 @@ jobs:
 
       - name: Create helstorm_test_test database
         run: |
-          mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS helstorm_test_test;"
+          mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS helstorm_test_test;"
 
       - name: Generate JWT keys
         run: |
