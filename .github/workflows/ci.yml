@@ -1,0 +1,93 @@
+name: CI for develop and feature branches
+
+on:
+  push:
+    branches:
+      - develop
+      - 'feature/**'
+      - 'hotfix/**'
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: helstorm_test
+          MYSQL_USER: ide
+          MYSQL_PASSWORD: ide
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping --silent" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    env:
+      APP_ENV: test
+      DATABASE_URL: mysql://ide:ide@127.0.0.1:3306/helstorm_test
+      JWT_SECRET_KEY: config/jwt/private.pem
+      JWT_PUBLIC_KEY: config/jwt/public.pem
+      JWT_PASSPHRASE: ${{ secrets.JWT_PASSPHRASE }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, json
+
+      - name: Cache Composer packages
+        id: composer-cache
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-
+
+      - name: Install dependencies
+        run: |
+          DATABASE_URL="${DATABASE_URL}" composer install --prefer-dist --no-progress
+
+      - name: Wait for MySQL
+        run: |
+          until mysqladmin ping -h 127.0.0.1 -uide -pide --silent; do
+            echo "Waiting for MySQL..."
+            sleep 3
+          done
+
+      - name: Create helstorm_test_test database
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -proot -e "CREATE DATABASE IF NOT EXISTS helstorm_test_test;"
+
+      - name: Grant privileges to user 'ide' on helstorm_test_test
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -proot -e "GRANT ALL PRIVILEGES ON helstorm_test_test.* TO 'ide'@'%'; FLUSH PRIVILEGES;"
+
+      - name: Run Doctrine migrations
+        run: |
+          php bin/console doctrine:migrations:migrate --no-interaction --no-debug
+
+      - name: Generate JWT keys
+        run: |
+          mkdir -p config/jwt
+          openssl genpkey -out config/jwt/private.pem -aes256 -algorithm rsa -pkeyopt rsa_keygen_bits:4096 -pass pass:${{ secrets.JWT_PASSPHRASE }}
+          openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout -passin pass:${{ secrets.JWT_PASSPHRASE }}
+
+      - name: Run test suite
+        run: |
+          composer test
+
+      - name: Clean JWT keys
+        run: rm -rf config/jwt
+
+      - name: Security Check
+        run: |
+          composer global require enlightn/security-checker
+          ~/.composer/vendor/bin/security-checker security:check

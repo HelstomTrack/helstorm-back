@@ -39,6 +39,7 @@
     "require-dev": {
         "doctrine/doctrine-fixtures-bundle": "^4.1",
         "phpunit/phpunit": "^9.5",
+        "squizlabs/php_codesniffer": "^3.13",
         "symfony/browser-kit": "7.2.*",
         "symfony/css-selector": "7.2.*",
         "symfony/maker-bundle": "^1.62.1",
@@ -83,7 +84,8 @@
         ],
         "post-update-cmd": [
             "@auto-scripts"
-        ]
+        ],
+        "test": "php bin/phpunit"
     },
     "conflict": {
         "symfony/symfony": "*"
