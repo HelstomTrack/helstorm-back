@@ -77,7 +77,7 @@ jobs:
         run: composer test
         env:
           APP_ENV: test
-          DATABASE_URL: mysql://ide:ide@127.0.0.1:3306/helstorm_test
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Clean JWT keys
         run: rm -rf config/jwt
