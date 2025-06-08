@@ -55,6 +55,10 @@ jobs:
             sleep 3
           done
 
+      - name: Create helstorm_test_test database
+        run: |
+          mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS helstorm_test_test;"
+
       - name: Generate JWT keys
         run: |
           mkdir -p config/jwt
@@ -64,7 +68,8 @@ jobs:
       - name: Run test suite
         run: composer test
         env:
-          DATABASE_URL: mysql://ide:ide@127.0.0.1:3306/helstorm_test
+          APP_ENV: test
+          DATABASE_URL: mysql://ide:ide@127.0.0.1:3306/helstorm_test_test
 
       - name: Clean JWT keys
         run: rm -rf config/jwt
