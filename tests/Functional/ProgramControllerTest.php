@@ -20,7 +20,7 @@ class ProgramControllerTest extends TestCase
     {
         $user = new User();
         $userMetrics = new UserMetrics();
-        $userMetrics->setUser($user)->setGoal('Strong')->setWeight(70)->setHeight(175);
+        $userMetrics->setUser($user)->setGoal('Bulk')->setWeight(70)->setHeight(175);
         $plan = $this->createMock(Plan::class);
 
         // Mock ProgramSelectorService
