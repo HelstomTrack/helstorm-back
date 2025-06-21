@@ -23,7 +23,7 @@ class ProgramSelectorServiceTest extends TestCase
         $service = new ProgramSelectorService($entityManager);
 
         // Strong -> medium weight -> average height = 'PPL'
-        $result = $service->getProgram('Strong', 70, 175);
+        $result = $service->getProgram('Bulk', 70, 175);
 
         $this->assertSame($plan, $result);
     }

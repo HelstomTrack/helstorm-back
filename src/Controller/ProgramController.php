@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Diet;
 use App\Entity\Programs;
 use App\Entity\User;
 use App\Entity\UserMetrics;
@@ -51,11 +52,23 @@ class ProgramController extends AbstractController
             $userMetrics->getWeight(),
             $userMetrics->getHeight()
         );
+
         if (!$plan) {
             return new JsonResponse(['error' => 'None plan found for this user'], Response::HTTP_NOT_FOUND);
         }
 
+        $diet = new Diet();
+        if ($userMetrics->getGoal() == 'Bulk') {
+
+            $user->addDiet($diet->setName('Bulk'));
+        } elseif ($userMetrics->getGoal() == 'Cut') {
+            $user->addDiet($diet->setName('Cut'));
+        } else {
+            return new JsonResponse(['error' => 'Invalid plan name'], Response::HTTP_BAD_REQUEST);
+        }
         $user->addPlan($plan);
+        $entityManager->persist($diet);
+       ;
         $entityManager->flush();
 
         return new JsonResponse(['message' => 'Plan assigned with success'], Response::HTTP_CREATED);

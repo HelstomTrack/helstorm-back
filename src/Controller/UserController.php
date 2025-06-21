@@ -55,6 +55,7 @@ class UserController extends AbstractController
             return $this->json(['message' => 'Registration successful'], Response::HTTP_CREATED);
         }
 
+
         return $this->json(['error' => 'No plan found for this user'], Response::HTTP_NOT_FOUND);
     }
 
