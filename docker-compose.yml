@@ -2,25 +2,21 @@ version: "3.8"
 
 services:
   fpm:
-    build:
-      context: ./docker
-      dockerfile: Dockerfile-php
+    image: IlyesDEO/helstorm-back-fpm:latest
     volumes:
-      - ./:/var/www/project/:cached
+      - .:/var/www/project:cached
       - ./cert:/etc/nginx/certs:ro
     networks:
       - symfony
 
   nginx:
-    build:
-      context: ./docker
-      dockerfile: Dockerfile-nginx
-    volumes:
-      - ./:/var/www/project/:cached
-      - ./cert:/etc/nginx/certs:ro
+    image: IlyesDEO/helstorm-back-nginx:latest
     ports:
       - 80:80
       - 443:443
+    volumes:
+      - .:/var/www/project:cached
+      - ./cert:/etc/nginx/certs:ro
     networks:
       - symfony
     user: "root"
