@@ -3,6 +3,7 @@ name: CI for develop and feature branches
 on:
   push:
     branches:
+      - main
       - develop
       - 'feature/**'
       - 'hotfix/**'
