@@ -106,13 +106,14 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push FPM image
+      - name: Build and push PHP-FPM image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: docker/Dockerfile-php
           push: true
-          tags: IlyesDEO/helstorm-back-fpm:latest
+          tags: IlyesDEO/helstorm-back-php:latest
+
 
       - name: Build and push Nginx image
         uses: docker/build-push-action@v5
