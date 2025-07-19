@@ -112,7 +112,7 @@ jobs:
           context: .
           file: docker/Dockerfile-php
           push: true
-          tags: IlyesDEO/helstorm-back-php:latest
+          tags: ilyesdeo/helstorm-back-php:latest
 
 
       - name: Build and push Nginx image
@@ -121,7 +121,8 @@ jobs:
           context: .
           file: docker/Dockerfile-nginx
           push: true
-          tags: IlyesDEO/helstorm-back-nginx:latest
+          tags: ilyesdeo/helstorm-back-nginx:latest
+
   deploy:
     if: github.ref == 'refs/heads/main'
     needs: build-and-push
