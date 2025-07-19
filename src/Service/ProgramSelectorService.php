@@ -10,40 +10,6 @@ class ProgramSelectorService
     private EntityManagerInterface $entityManager;
 
     private const PROGRAM_MAPPING = [
-        'Strong' => [
-            'light' => [
-                'little' => 'Full Body',
-                'average' => 'Upper-Lower',
-                'big' => 'Push-Pull',
-            ],
-            'medium' => [
-                'little' => 'PPL',
-                'average' => 'PPL',
-                'big' => 'Strength Training',
-            ],
-            'heavy' => [
-                'little' => 'Powerlifting',
-                'average' => 'Powerlifting',
-                'big' => 'Strongman',
-            ],
-        ],
-        'Shred' => [
-            'light' => [
-                'little' => 'Full Body',
-                'average' => 'Cardio & Conditioning',
-                'big' => 'HIIT',
-            ],
-            'medium' => [
-                'little' => 'PPL',
-                'average' => 'Functional Fitness',
-                'big' => 'CrossFit',
-            ],
-            'heavy' => [
-                'little' => 'Athlétique',
-                'average' => 'Endurance Training',
-                'big' => 'Strongman',
-            ],
-        ],
         'Bulk' => [
             'light' => [
                 'little' => 'Full Body',
@@ -61,40 +27,6 @@ class ProgramSelectorService
                 'big' => 'Strongman',
             ],
         ],
-        'Fit' => [
-            'light' => [
-                'little' => 'Calisthenics',
-                'average' => 'Full Body',
-                'big' => 'Athlétique',
-            ],
-            'medium' => [
-                'little' => 'Functional Fitness',
-                'average' => 'CrossFit',
-                'big' => 'PPL',
-            ],
-            'heavy' => [
-                'little' => 'Power & Endurance',
-                'average' => 'Cardio & Conditioning',
-                'big' => 'Strongman',
-            ],
-        ],
-        'Power' => [
-            'light' => [
-                'little' => 'Strength Training',
-                'average' => 'Powerlifting',
-                'big' => 'Strongman',
-            ],
-            'medium' => [
-                'little' => 'Powerlifting',
-                'average' => 'Powerlifting',
-                'big' => 'Strongman',
-            ],
-            'heavy' => [
-                'little' => 'Strongman',
-                'average' => 'Strongman',
-                'big' => 'Strongman',
-            ],
-        ],
         'Cut' => [
             'light' => [
                 'little' => 'Full Body',
@@ -109,23 +41,6 @@ class ProgramSelectorService
             'heavy' => [
                 'little' => 'Endurance Training',
                 'average' => 'Power & Endurance',
-                'big' => 'Strongman',
-            ],
-        ],
-        'Enduro' => [
-            'light' => [
-                'little' => 'Calisthenics',
-                'average' => 'HIIT',
-                'big' => 'Athlétique',
-            ],
-            'medium' => [
-                'little' => 'Endurance Training',
-                'average' => 'Cardio & Conditioning',
-                'big' => 'Power & Endurance',
-            ],
-            'heavy' => [
-                'little' => 'CrossFit',
-                'average' => 'Functional Fitness',
                 'big' => 'Strongman',
             ],
         ],

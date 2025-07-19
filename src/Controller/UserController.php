@@ -43,8 +43,8 @@ class UserController extends AbstractController
     #[Route('/register', name: 'app_user_post', methods: ['POST'])]
     public function registration(Request $request, UserManager $userManager): Response
     {
+        global $e;
         $data = json_decode($request->getContent(), true);
-
         try {
             $user = $userManager->register($data);
         } catch (\InvalidArgumentException $e) {
@@ -54,6 +54,7 @@ class UserController extends AbstractController
         if ($this->programController->createUserWithProgram($user->getId(), $this->entityManager)) {
             return $this->json(['message' => 'Registration successful'], Response::HTTP_CREATED);
         }
+
 
         return $this->json(['error' => 'No plan found for this user'], Response::HTTP_NOT_FOUND);
     }
