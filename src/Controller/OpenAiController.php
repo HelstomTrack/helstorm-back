@@ -32,17 +32,33 @@ class OpenAiController extends AbstractController
      * @throws DecodingExceptionInterface
      * @throws ClientExceptionInterface
      */
-    #[Route('/chat/prog', name: 'chat', methods: ['POST'])]
-    public function chat(Request $request): JsonResponse
+    #[Route('/chat', name: 'api_chat', methods: ['POST', 'GET'])]
+    public function chat(Request $request, OpenAiService $openAiService): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
-
-        if (!isset($data['message'])) {
-            return new JsonResponse(['error' => 'The field "message" is required'], 400);
+        $rawJson = $request->getContent();
+        if ($rawJson === '' || $rawJson === null) {
+            return $this->json(['error' => 'Corps JSON manquant'], 400);
         }
 
-        $response = $this->openAiService->askChatGPT($data['message']);
+        json_decode($rawJson, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return $this->json(['error' => 'JSON invalide: '.json_last_error_msg()], 400);
+        }
 
-        return new JsonResponse(['response' => $response]);
+        $assistantId = $_ENV['OPENAI_ASSISTANT_ID'];
+
+        $result = $openAiService->askAssistantWithRawJson($assistantId, $rawJson);
+
+        if (!empty($result['error'])) {
+            return $this->json(['error' => $result['error']], 500);
+        }
+
+        $message = json_decode($result['text'], true);
+
+        return $this->json([
+            'thread_id' => $result['thread_id'],
+            'run_id'    => $result['run_id'],
+            'message'   => $message,
+        ]);
     }
 }

@@ -69,10 +69,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['diet'])]
     private Collection $diets;
 
+    /**
+     * @var Collection<int, Programs>
+     */
+    #[ORM\OneToMany(targetEntity: Programs::class, mappedBy: 'user')]
+    private Collection $programs;
+
     public function __construct()
     {
         $this->plans = new ArrayCollection();
         $this->diets = new ArrayCollection();
+        $this->programs = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -252,6 +259,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if ($this->diets->removeElement($diet)) {
             $diet->removeUser($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Programs>
+     */
+    public function getPrograms(): Collection
+    {
+        return $this->programs;
+    }
+
+    public function addProgram(Programs $program): static
+    {
+        if (!$this->programs->contains($program)) {
+            $this->programs->add($program);
+            $program->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeProgram(Programs $program): static
+    {
+        if ($this->programs->removeElement($program)) {
+            // set the owning side to null (unless already changed)
+            if ($program->getUser() === $this) {
+                $program->setUser(null);
+            }
         }
 
         return $this;

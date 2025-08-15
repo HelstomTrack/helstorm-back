@@ -17,13 +17,6 @@ class Programs
     #[ORM\Column]
     private ?int $id = null;
 
-    #[Groups('program')]
-    #[ORM\Column(length: 255)]
-    private ?string $name = null;
-
-    #[ORM\Column(type: Types::TEXT)]
-    private ?string $description = null;
-
     #[ORM\Column]
     private ?\DateTimeImmutable $created_at = null;
 
@@ -45,6 +38,18 @@ class Programs
     #[ORM\OneToMany(targetEntity: PlanProgramDay::class, mappedBy: 'program')]
     private Collection $planProgramDays;
 
+    #[ORM\Column(type: Types::ARRAY)]
+    private array $content = [];
+
+    #[ORM\ManyToOne(inversedBy: 'programs')]
+    private ?User $user = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $threadId = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $runId = null;
+
     public function __construct()
     {
         $this->userPrograms = new ArrayCollection();
@@ -58,29 +63,6 @@ class Programs
         return $this->id;
     }
 
-    public function getName(): ?string
-    {
-        return $this->name;
-    }
-
-    public function setName(string $name): static
-    {
-        $this->name = $name;
-
-        return $this;
-    }
-
-    public function getDescription(): ?string
-    {
-        return $this->description;
-    }
-
-    public function setDescription(string $description): static
-    {
-        $this->description = $description;
-
-        return $this;
-    }
 
     public function getCreatedAt(): ?\DateTimeImmutable
     {
@@ -194,6 +176,54 @@ class Programs
                 $planProgramDay->setProgram(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getContent(): array
+    {
+        return $this->content;
+    }
+
+    public function setContent(array $content): static
+    {
+        $this->content = $content;
+
+        return $this;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
+
+        return $this;
+    }
+
+    public function getThreadId(): ?string
+    {
+        return $this->threadId;
+    }
+
+    public function setThreadId(string $threadId): static
+    {
+        $this->threadId = $threadId;
+
+        return $this;
+    }
+
+    public function getRunId(): ?string
+    {
+        return $this->runId;
+    }
+
+    public function setRunId(string $runId): static
+    {
+        $this->runId = $runId;
 
         return $this;
     }
