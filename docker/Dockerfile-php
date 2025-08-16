@@ -1,20 +1,23 @@
 # docker/Dockerfile-php
 FROM php:8.2-fpm
 
-# Paquets nécessaires aux extensions PHP
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Bonnes pratiques : échouer vite, et nettoyer après apt
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
     git curl wget zip unzip sudo ssh ca-certificates locales \
+    build-essential pkg-config \
     zlib1g-dev libzip-dev \
     libxml2-dev \
-    libicu-dev \
+    libicu-dev \            # ← nécessaire pour intl
     libpng-dev libjpeg62-turbo-dev libfreetype6-dev libwebp-dev \
-    pkg-config \
  && rm -rf /var/lib/apt/lists/*
 
-# gd: configure avec les bonnes options
+# gd : activer les options qui vont bien
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp
 
-# Compile les extensions en parallèle
+# Compiler les extensions (en parallèle)
 RUN docker-php-ext-install -j"$(nproc)" \
     pdo_mysql \
     soap \
@@ -27,7 +30,7 @@ RUN docker-php-ext-install -j"$(nproc)" \
 COPY docker/build/php/opcache.ini /usr/local/etc/php/conf.d/
 COPY docker/build/php/custom.ini  /usr/local/etc/php/conf.d/
 
-# Composer (version actuelle)
+# Installer Composer (actuel)
 RUN curl -sS https://getcomposer.org/installer | php \
  && mv composer.phar /usr/local/bin/composer
 
