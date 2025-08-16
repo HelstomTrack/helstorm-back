@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Manager\UserManager;
 use App\Repository\UserRepository;
+use App\Service\ProgramGenerator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -24,41 +25,41 @@ class UserController extends AbstractController
     (
         public EntityManagerInterface $entityManager,
         public ProgramController $programController,
+        public ProgramGenerator $programGenerator
     )
     {
     }
 
-    /***
-     * @param UserPasswordHasherInterface $passwordHasher
-     * @param Request $request
-     * @param UserRepository $userRepository
-     * @return Response
-     */
-    #[OA\Response(
-        response: 201,
-        description: 'Successful response',
-        content: new Model(type: User::class, groups: ['non_sensitive_data'])
-    )]
-    #[OA\Tag(name: 'User')]
+
     #[Route('/register', name: 'app_user_post', methods: ['POST'])]
-    public function registration(Request $request, UserManager $userManager): Response
+    public function register(Request $request, UserManager $userManager): Response
     {
-        global $e;
-        $data = json_decode($request->getContent(), true);
+        $data = json_decode($request->getContent(), true) ?? [];
+
         try {
             $user = $userManager->register($data);
         } catch (\InvalidArgumentException $e) {
             return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }
 
-        if ($this->programController->createUserWithProgram($user->getId(), $this->entityManager)) {
-            return $this->json(['message' => 'Registration successful'], Response::HTTP_CREATED);
+        try {
+            $program = $this->programGenerator->generateAndSave($user);
+        } catch (\Throwable $e) {
+            return $this->json([
+                'message' => 'Registration successful, but program generation failed',
+                'error'   => $e->getMessage(),
+            ], Response::HTTP_CREATED);
         }
 
-
-        return $this->json(['error' => 'No plan found for this user'], Response::HTTP_NOT_FOUND);
+        return $this->json([
+            'message'    => 'Registration successful',
+            'user_id'    => $user->getId(),
+            'program_id' => $program->getId(),
+            'program'    => $program->getContent(), // JSON du bot
+            'thread_id'  => $program->getThreadId(),
+            'run_id'     => $program->getRunId(),
+        ], Response::HTTP_CREATED);
     }
-
     /***
      * @param SerializerInterface $serializer
      * @return JsonResponse
