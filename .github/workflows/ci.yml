@@ -113,6 +113,8 @@ jobs:
           file: docker/Dockerfile-php
           push: true
           tags: ilyesdeo/helstorm-back-php:latest
+          no-cache: true
+          pull: true
 
 
       - name: Build and push Nginx image
