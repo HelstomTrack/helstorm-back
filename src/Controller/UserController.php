@@ -30,37 +30,6 @@ class UserController extends AbstractController
     {
     }
 
-    /***
-     * @param UserPasswordHasherInterface $passwordHasher
-     * @param Request $request
-     * @param UserRepository $userRepository
-     * @return Response
-     */
-    #[OA\Response(
-        response: 201,
-        description: 'Successful response',
-        content: new Model(type: User::class, groups: ['non_sensitive_data'])
-    )]
-    #[OA\Tag(name: 'User')]
-    #[Route('/registers', name: 'app_user_posts', methods: ['POST'])]
-    public function registration(Request $request, UserManager $userManager): Response
-    {
-        global $e;
-        $data = json_decode($request->getContent(), true);
-        try {
-            $user = $userManager->register($data);
-        } catch (\InvalidArgumentException $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
-        }
-
-        if ($this->programController->createUserWithProgram($user->getId(), $this->entityManager)) {
-            return $this->json(['message' => 'Registration successful'], Response::HTTP_CREATED);
-        }
-
-
-        return $this->json(['error' => 'No plan found for this user'], Response::HTTP_NOT_FOUND);
-    }
-
 
     #[Route('/register', name: 'app_user_post', methods: ['POST'])]
     public function register(Request $request, UserManager $userManager): Response
@@ -76,9 +45,6 @@ class UserController extends AbstractController
         try {
             $program = $this->programGenerator->generateAndSave($user);
         } catch (\Throwable $e) {
-            // Si la génération échoue, tu peux choisir :
-            // - soit annuler le register (rollback transac + 500),
-            // - soit valider le user quand même et signaler l'erreur programme.
             return $this->json([
                 'message' => 'Registration successful, but program generation failed',
                 'error'   => $e->getMessage(),

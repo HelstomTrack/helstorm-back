@@ -39,7 +39,7 @@ class Programs
     private Collection $planProgramDays;
 
     #[ORM\Column(type: Types::ARRAY)]
-    private array $content = [];
+    private $content = [];
 
     #[ORM\ManyToOne(inversedBy: 'programs')]
     private ?User $user = null;
@@ -182,7 +182,7 @@ class Programs
 
     public function getContent(): array
     {
-        return $this->content;
+        return is_array($this->content) ? $this->content : ['raw' => $this->content];
     }
 
     public function setContent(array $content): static

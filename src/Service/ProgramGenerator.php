@@ -54,9 +54,14 @@ class ProgramGenerator
         $program = (new Programs())
             ->setCreatedAt(new \DateTimeImmutable())
             ->setUser($user)
-            ->setContent($decoded)
-            ->setThreadId($result['thread_id'] ?? null)
-            ->setRunId($result['run_id'] ?? null);
+            ->setContent($decoded);
+
+        if (!empty($result['thread_id'])) {
+            $program->setThreadId($result['thread_id']);
+        }
+        if (!empty($result['run_id'])) {
+            $program->setRunId($result['run_id']);
+        }
         $this->em->persist($program);
         $this->em->flush();
 
