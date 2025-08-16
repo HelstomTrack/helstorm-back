@@ -3,6 +3,7 @@ name: CI for develop and feature branches
 on:
   push:
     branches:
+      - main
       - develop
       - 'feature/**'
       - 'hotfix/**'
@@ -105,13 +106,14 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push FPM image
+      - name: Build and push PHP-FPM image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: docker/Dockerfile-fpm
+          file: docker/Dockerfile-php
           push: true
-          tags: IlyesDEO/helstorm-back-fpm:latest
+          tags: ilyesdeo/helstorm-back-php:latest
+
 
       - name: Build and push Nginx image
         uses: docker/build-push-action@v5
@@ -119,7 +121,8 @@ jobs:
           context: .
           file: docker/Dockerfile-nginx
           push: true
-          tags: IlyesDEO/helstorm-back-nginx:latest
+          tags: ilyesdeo/helstorm-back-nginx:latest
+
   deploy:
     if: github.ref == 'refs/heads/main'
     needs: build-and-push
@@ -133,6 +136,6 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ~
+            cd ~/helstorm-back
             docker-compose pull
             docker-compose up -d --remove-orphans
