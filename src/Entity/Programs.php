@@ -52,7 +52,6 @@ class Programs
 
     public function __construct()
     {
-        $this->userPrograms = new ArrayCollection();
         $this->programsExercises = new ArrayCollection();
         $this->plans = new ArrayCollection();
         $this->planProgramDays = new ArrayCollection();
