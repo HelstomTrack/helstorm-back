@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Tests\Unit\Manager;
+namespace App\Tests\Manager;
 
 use App\Entity\User;
+use App\Entity\UserMetrics;
 use App\Manager\UserManager;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -11,109 +12,72 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class UserManagerTest extends TestCase
 {
-    private $em;
-    private $passwordHasher;
-    private $userRepository;
-    private UserManager $userManager;
-
-    protected function setUp(): void
+    private function validPayload(): array
     {
-        $this->em = $this->createMock(EntityManagerInterface::class);
-        $this->passwordHasher = $this->createMock(UserPasswordHasherInterface::class);
-        $this->userRepository = $this->createMock(UserRepository::class);
-
-        $this->userManager = new UserManager(
-            $this->em,
-            $this->passwordHasher,
-            $this->userRepository
-        );
-    }
-
-    public function testRegisterWithValidData(): void
-    {
-        $data = [
-            'email' => 'test@example.com',
-            'password' => 'securepass',
+        return [
+            'email' => 'john@example.com',
+            'password' => 'secret',
             'firstname' => 'John',
             'lastname' => 'Doe',
-            'phone' => '1234567890',
+            'phone' => '0600000000',
             'age' => 30,
-            'weight' => 70,
+            'weight' => 80,
             'height' => 180,
-            'goal' => 'fitness',
+            'goal' => 'fat_loss',
             'level' => 'beginner',
             'gender' => 'male',
         ];
-
-        // Simule qu'aucun utilisateur n'existe
-        $this->userRepository
-            ->expects($this->once())
-            ->method('findByEmailOrPhoneNumber')
-            ->with($data['email'], $data['phone'])
-            ->willReturn(null);
-
-        // Simule le hash du mot de passe
-        $this->passwordHasher
-            ->expects($this->once())
-            ->method('hashPassword')
-            ->willReturn('hashed_pass');
-
-        // Vérifie que l'EntityManager appelle persist() et flush()
-        $this->em->expects($this->once())->method('persist');
-        $this->em->expects($this->once())->method('flush');
-
-        $user = $this->userManager->register($data);
-
-        $this->assertInstanceOf(User::class, $user);
-        $this->assertEquals('test@example.com', $user->getEmail());
-        $this->assertEquals('hashed_pass', $user->getPassword());
     }
 
-    public function testRegisterWithMissingField(): void
+    public function testRegisterSuccess(): void
     {
+        $em = $this->createMock(EntityManagerInterface::class);
+        $hasher = $this->createMock(UserPasswordHasherInterface::class);
+        $repo = $this->createMock(UserRepository::class);
+
+        $repo->method('findByEmailOrPhoneNumber')->willReturn(null);
+        $hasher->method('hashPassword')->willReturn('HASHED');
+
+        $em->expects(self::once())->method('persist')->with(self::callback(fn($u) => $u instanceof User && $u->getUserMetrics() instanceof UserMetrics));
+        $em->expects(self::once())->method('flush');
+
+        $manager = new UserManager($em, $hasher, $repo);
+        $user = $manager->register($this->validPayload());
+
+        self::assertSame('john@example.com', $user->getEmail());
+        self::assertSame('HASHED', $user->getPassword());
+        self::assertSame(30, $user->getUserMetrics()->getAge());
+    }
+
+    public function testRegisterMissingFieldThrows(): void
+    {
+        $em = $this->createMock(EntityManagerInterface::class);
+        $hasher = $this->createMock(UserPasswordHasherInterface::class);
+        $repo = $this->createMock(UserRepository::class);
+
+        $manager = new UserManager($em, $hasher, $repo);
+
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Missing field: email');
+        $this->expectExceptionMessage('Missing field: lastname');
 
-        $data = [
-            // email is missing
-            'password' => 'securepass',
-            'firstname' => 'John',
-            'lastname' => 'Doe',
-            'phone' => '1234567890',
-            'age' => 30,
-            'weight' => 70,
-            'height' => 180,
-            'goal' => 'fitness',
-            'level' => 'beginner',
-            'gender' => 'male',
-        ];
-
-        $this->userManager->register($data);
+        $payload = $this->validPayload();
+        unset($payload['lastname']);
+        $manager->register($payload);
     }
 
-    public function testRegisterWhenUserAlreadyExists(): void
+    public function testRegisterExistingUserThrows(): void
     {
+        $em = $this->createMock(EntityManagerInterface::class);
+        $hasher = $this->createMock(UserPasswordHasherInterface::class);
+        $repo = $this->createMock(UserRepository::class);
+
+        $repo->method('findByEmailOrPhoneNumber')->willReturn(new User());
+
+        $manager = new UserManager($em, $hasher, $repo);
+
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('User already exists.');
 
-        $data = [
-            'email' => 'existing@example.com',
-            'password' => 'securepass',
-            'firstname' => 'Jane',
-            'lastname' => 'Doe',
-            'phone' => '1234567890',
-            'age' => 25,
-            'weight' => 60,
-            'height' => 170,
-            'goal' => 'lose_weight',
-            'level' => 'intermediate',
-            'gender' => 'female',
-        ];
-
-        $this->userRepository
-            ->method('findByEmailOrPhoneNumber')
-            ->willReturn(new User());
-
-        $this->userManager->register($data);
+        $manager->register($this->validPayload());
     }
 }
