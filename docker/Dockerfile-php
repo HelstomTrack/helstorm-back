@@ -11,7 +11,10 @@ RUN apt-get update \
     libpng-dev libjpeg62-turbo-dev libfreetype6-dev libwebp-dev \
  && rm -rf /var/lib/apt/lists/*
 
-# gd doit être configuré avec les libs ci-dessus
+ENV PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig
+
+RUN pkg-config --modversion icu-uc && pkg-config --modversion icu-i18n
+
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp
 
 RUN docker-php-ext-install -j"$(nproc)" \
