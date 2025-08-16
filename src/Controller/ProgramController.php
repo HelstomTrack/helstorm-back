@@ -114,4 +114,20 @@ class ProgramController extends AbstractController
 
         return new JsonResponse($data);
     }
+
+    #[Route('/program/user/{id}', name: 'app_program_goals', methods: ['GET'])]
+    public function getProgramUser(int $id): JsonResponse
+    {
+        $user = $this->entityManager->getRepository(User::class)->find($id);
+        if (!$user) {
+            return $this->json(['error' => 'User not found'], 404);
+        }
+
+        $program = $this->entityManager->getRepository(Programs::class)->findOneBy(['user' => $user]);
+        if (!$program) {
+            return $this->json(['error' => 'Program not found'], 404);
+        }
+
+        return $this->json([$program->getContent()], 200);
+    }
 }

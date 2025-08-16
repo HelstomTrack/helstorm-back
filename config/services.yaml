@@ -15,6 +15,9 @@ services:
             $httpClient: '@http_client'
             $params: '@parameter_bag'
             $apiKey: '%openai_api_key%'
+    App\Service\ProgramGenerator:
+        arguments:
+            $assistantId: '%env(OPENAI_ASSISTANT_ID)%'
     _defaults:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.

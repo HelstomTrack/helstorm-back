@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   fpm:
-    image: IlyesDEO/helstorm-back-fpm:latest
+    image: ilyesdeo/helstorm-back-fpm:latest
     volumes:
       - .:/var/www/project:cached
       - ./cert:/etc/nginx/certs:ro
@@ -10,7 +10,7 @@ services:
       - symfony
 
   nginx:
-    image: IlyesDEO/helstorm-back-nginx:latest
+    image: ilyesdeo/helstorm-back-nginx:latest
     ports:
       - 80:80
       - 443:443

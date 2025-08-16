@@ -18,8 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gd \
         intl
 
-COPY docker/build/php/opcache.ini /usr/local/etc/php/conf.d/
-COPY docker/build/php/custom.ini  /usr/local/etc/php/conf.d/
+COPY build/php/opcache.ini /usr/local/etc/php/conf.d/
+COPY build/php/custom.ini /usr/local/etc/php/conf.d/
 
 RUN curl -sS https://getcomposer.org/installer | php && mv composer.phar /usr/local/bin/composer
 RUN composer self-update 1.9.0
