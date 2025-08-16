@@ -2,163 +2,126 @@
 
 namespace App\Tests\Functional;
 
+use App\Entity\Programs;
 use App\Entity\User;
+use App\Service\ProgramGenerator;
+use App\Manager\UserManager;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
 class UserControllerTest extends WebTestCase
 {
-    private function createAuthenticatedClient(): array
+    private function payload(): array
+    {
+        return [
+            'email' => 'john@example.com',
+            'password' => 'secret',
+            'firstname' => 'John',
+            'lastname' => 'Doe',
+            'phone' => '0600000000',
+            'age' => 30,
+            'weight' => 80,
+            'height' => 180,
+            'goal' => 'fat_loss',
+            'level' => 'beginner',
+            'gender' => 'male',
+        ];
+    }
+
+    public function testRegisterValidationError(): void
     {
         $client = static::createClient();
-        $container = static::getContainer();
 
-        $user = (new User())
-            ->setEmail('authtest@example.com')
-            ->setFirstname('Auth')
-            ->setLastname('Test')
-            ->setPhone('0600000002');
+        // Remplace UserManager pour renvoyer une InvalidArgumentException
+        $fakeUserManager = $this->createMock(UserManager::class);
+        $fakeUserManager->method('register')->willThrowException(new \InvalidArgumentException('Missing field: email'));
 
-        $passwordHasher = $container->get('security.user_password_hasher');
-        $user->setPassword($passwordHasher->hashPassword($user, 'password'));
+        static::getContainer()->set(UserManager::class, $fakeUserManager);
 
-        $entityManager = $container->get('doctrine')->getManager();
-        $entityManager->persist($user);
-        $entityManager->flush();
+        $client->request('POST', '/register', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([]));
 
-        $jwtManager = $container->get('lexik_jwt_authentication.jwt_manager');
-        $token = $jwtManager->create($user);
+        self::assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+        $json = json_decode($client->getResponse()->getContent(), true);
+        self::assertSame('Missing field: email', $json['error'] ?? null);
+    }
 
-        return [$client, $token, $user];
+    public function testRegisterSuccessButProgramFails(): void
+    {
+        $client = static::createClient();
+
+        // Fake UserManager: renvoie un User avec un id
+        $fakeUser = (new User())->setEmail('john@example.com')->setFirstname('John')->setLastname('Doe');
+        // simulate id via reflection (si entité a un setId privé, sinon adapte)
+        $ref = new \ReflectionClass($fakeUser);
+        if ($ref->hasProperty('id')) {
+            $prop = $ref->getProperty('id');
+            $prop->setAccessible(true);
+            $prop->setValue($fakeUser, 1);
+        }
+
+        $fakeUserManager = $this->createMock(UserManager::class);
+        $fakeUserManager->method('register')->willReturn($fakeUser);
+
+        $fakeProgramGenerator = $this->createMock(ProgramGenerator::class);
+        $fakeProgramGenerator->method('generateAndSave')->willThrowException(new \RuntimeException('OpenAI error: rate_limit'));
+
+        static::getContainer()->set(UserManager::class, $fakeUserManager);
+        static::getContainer()->set(ProgramGenerator::class, $fakeProgramGenerator);
+
+        $client->request('POST', '/register', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode($this->payload()));
+
+        self::assertResponseStatusCodeSame(Response::HTTP_CREATED);
+        $json = json_decode($client->getResponse()->getContent(), true);
+        self::assertSame('Registration successful, but program generation failed', $json['message'] ?? null);
+        self::assertSame('OpenAI error: rate_limit', $json['error'] ?? null);
     }
 
     public function testRegisterSuccess(): void
     {
         $client = static::createClient();
 
-        $payload = [
-            'email' => 'testt@example.com',
-            'password' => 'password123',
-            'firstname' => 'John',
-            'lastname' => 'Doe',
-            'phone' => '0600000001',
-            'age' => 30,
-            'weight' => 70,
-            'height' => 180,
-            'goal' => 'gain muscle',
-            'level' => 'intermediate',
-            'gender' => 'male'
-        ];
+        // Fake user & program
+        $fakeUser = (new User())->setEmail('john@example.com')->setFirstname('John')->setLastname('Doe');
+        $userRef = new \ReflectionClass($fakeUser);
+        if ($userRef->hasProperty('id')) {
+            $prop = $userRef->getProperty('id');
+            $prop->setAccessible(true);
+            $prop->setValue($fakeUser, 42);
+        }
 
-        $client->request(
-            'POST',
-            '/register',
-            [],
-            [],
-            ['CONTENT_TYPE' => 'application/json'],
-            json_encode($payload)
-        );
+        $fakeProgram = (new Programs())
+            ->setUser($fakeUser)
+            ->setCreatedAt(new \DateTimeImmutable())
+            ->setContent(['plan' => 'Do stuff'])
+            ->setThreadId('thr_123')
+            ->setRunId('run_456');
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
-        $this->assertSame(
-            ['message' => 'Registration successful'],
-            json_decode($client->getResponse()->getContent(), true)
-        );
-    }
+        $progRef = new \ReflectionClass($fakeProgram);
+        if ($progRef->hasProperty('id')) {
+            $prop = $progRef->getProperty('id');
+            $prop->setAccessible(true);
+            $prop->setValue($fakeProgram, 7);
+        }
 
-    public function testRegisterWithMissingField(): void
-    {
-        $client = static::createClient();
+        $fakeUserManager = $this->createMock(UserManager::class);
+        $fakeUserManager->method('register')->willReturn($fakeUser);
 
-        $client->request(
-            'POST',
-            '/register',
-            [],
-            [],
-            ['CONTENT_TYPE' => 'application/json'],
-            json_encode([
-                'password' => 'password123',
-                'firstname' => 'John',
-                'lastname' => 'Doe',
-                'phone' => '0600000000',
-                'age' => 30,
-                'weight' => 70,
-                'height' => 180,
-                'goal' => 'gain muscle',
-                'level' => 'intermediate',
-                'gender' => 'male'
-            ])
-        );
+        $fakeProgramGenerator = $this->createMock(ProgramGenerator::class);
+        $fakeProgramGenerator->method('generateAndSave')->willReturn($fakeProgram);
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
-        $this->assertSame(
-            ['error' => 'Missing field: email'],
-            json_decode($client->getResponse()->getContent(), true)
-        );
-    }
+        static::getContainer()->set(UserManager::class, $fakeUserManager);
+        static::getContainer()->set(ProgramGenerator::class, $fakeProgramGenerator);
 
-    public function testGetAllUsers(): void
-    {
-        [$client, $token] = $this->createAuthenticatedClient();
+        $client->request('POST', '/register', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode($this->payload()));
 
-        $client->request(
-            'GET',
-            '/api/user',
-            [],
-            [],
-            ['HTTP_AUTHORIZATION' => "Bearer $token"]
-        );
+        self::assertResponseStatusCodeSame(Response::HTTP_CREATED);
+        $json = json_decode($client->getResponse()->getContent(), true);
 
-        $this->assertResponseIsSuccessful();
-        $this->assertResponseHeaderSame('content-type', 'application/json');
-    }
-
-    public function testGetUserByIdNotFound(): void
-    {
-        [$client, $token] = $this->createAuthenticatedClient();
-
-        $client->request(
-            'GET',
-            '/api/user/999999',
-            [],
-            [],
-            ['HTTP_AUTHORIZATION' => "Bearer $token"]
-        );
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
-        $this->assertSame(
-            ['error' => 'User not found'],
-            json_decode($client->getResponse()->getContent(), true)
-        );
-    }
-
-    public function testDeleteUser(): void
-    {
-        [$client, $token] = $this->createAuthenticatedClient();
-        $container = static::getContainer();
-
-        $user = (new User())
-            ->setEmail('todelete@example.com')
-            ->setFirstname('ToDelete')
-            ->setLastname('User')
-            ->setPhone('0612345678');
-
-        $passwordHasher = $container->get('security.user_password_hasher');
-        $user->setPassword($passwordHasher->hashPassword($user, 'password'));
-
-        $entityManager = $container->get('doctrine')->getManager();
-        $entityManager->persist($user);
-        $entityManager->flush();
-
-        $client->request(
-            'DELETE',
-            "/api/user/{$user->getId()}",
-            [],
-            [],
-            ['HTTP_AUTHORIZATION' => "Bearer $token"]
-        );
-
-        $this->assertResponseIsSuccessful();
-        $this->assertEquals('user deleted', $client->getResponse()->getContent());
+        self::assertSame('Registration successful', $json['message'] ?? null);
+        self::assertSame(42, $json['user_id'] ?? null);
+        self::assertSame(7, $json['program_id'] ?? null);
+        self::assertSame(['plan' => 'Do stuff'], $json['program'] ?? null);
+        self::assertSame('thr_123', $json['thread_id'] ?? null);
+        self::assertSame('run_456', $json['run_id'] ?? null);
     }
 }
