@@ -1,10 +1,14 @@
+# syntax=docker/dockerfile:1.6
 FROM php:8.2-fpm
 
-# Paquets nécessaires aux extensions PHP + utilitaires
+# -------------------------------------------------------
+# Dépendances système (inclut ICU + pkg-config pour intl)
+# -------------------------------------------------------
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
         git \
+        unzip \
         zlib1g-dev \
         libxml2-dev \
         libpng-dev \
@@ -13,46 +17,55 @@ RUN set -eux; \
         libzip-dev \
         libicu-dev \
         pkg-config \
-        vim curl ca-certificates \
-        subversion apt-transport-https apt-utils \
-        build-essential locales acl mailutils wget zip unzip \
-        gnupg \
-        sudo \
+        g++ \
+        curl \
+        ca-certificates \
         openssh-client \
     ; \
     rm -rf /var/lib/apt/lists/*
 
-# Configurer GD pour JPEG + FreeType AVANT l'installation
+# -------------------------------------------------------
+# Configuration/compilation des extensions PHP
+# -------------------------------------------------------
+# GD doit être configuré AVANT l'installation
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg
 
-# Compiler les extensions (parallèle)
+# Installer les extensions (intl a besoin de libicu-dev)
 RUN docker-php-ext-install -j"$(nproc)" \
-      pdo_mysql \
-      soap \
-      zip \
-      opcache \
-      gd \
-      intl
+    pdo_mysql \
+    soap \
+    zip \
+    opcache \
+    gd \
+    intl
 
-COPY docker/build/php/opcache.ini /usr/local/etc/php/conf.d/
-COPY docker/build/php/custom.ini /usr/local/etc/php/conf.d/
+# -------------------------------------------------------
+# Config PHP (optionnel : si ces fichiers existent dans le repo)
+# -------------------------------------------------------
+COPY docker/build/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+COPY docker/build/php/custom.ini  /usr/local/etc/php/conf.d/custom.ini
 
-# Composer (version récente recommandée)
-RUN curl -sS https://getcomposer.org/installer | php && mv composer.phar /usr/local/bin/composer
-# Évite de figer une version très ancienne :
-# RUN composer self-update --2  # (facultatif : rester en v2)
+# -------------------------------------------------------
+# Outils dev : Composer + PHPUnit 9 (compatible PHP 8.2)
+# -------------------------------------------------------
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 
-# ⚠️ PHPUnit 6.5 est incompatible avec PHP 8.2 — utiliser au moins PHPUnit 9/10.
-# Exemple : installer phpunit 9 via phar
-RUN wget -O /usr/local/bin/phpunit https://phar.phpunit.de/phpunit-9.phar \
-    && chmod +x /usr/local/bin/phpunit
+RUN curl -fsSL https://phar.phpunit.de/phpunit-9.phar -o /usr/local/bin/phpunit \
+ && chmod +x /usr/local/bin/phpunit
 
-# Utilisateurs/droits
+# -------------------------------------------------------
+# Droits et répertoires applicatifs
+# -------------------------------------------------------
 RUN usermod -u 1000 www-data \
  && usermod -a -G www-data root \
  && mkdir -p /var/www/.composer /var/www/project \
  && chown -R www-data:www-data /var/www
 
-WORKDIR /var/www/project/
+WORKDIR /var/www/project
 
-COPY . /var/www/project/
+# Copie du code (utilise --chown si BuildKit est actif)
+COPY --chown=www-data:www-data . /var/www/project/
+
+# (facultatif) Exposer le port FPM & healthcheck
+EXPOSE 9000
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD php-fpm -t || exit 1
