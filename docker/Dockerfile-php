@@ -1,71 +1,41 @@
-# syntax=docker/dockerfile:1.6
 FROM php:8.2-fpm
-
-# -------------------------------------------------------
-# Dépendances système (inclut ICU + pkg-config pour intl)
-# -------------------------------------------------------
-RUN set -eux; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
-        unzip \
         zlib1g-dev \
         libxml2-dev \
         libpng-dev \
-        libjpeg62-turbo-dev \
-        libfreetype6-dev \
         libzip-dev \
-        libicu-dev \
-        pkg-config \
-        g++ \
-        curl \
-        ca-certificates \
-        openssh-client \
-    ; \
-    rm -rf /var/lib/apt/lists/*
+        vim curl debconf subversion git apt-transport-https apt-utils \
+        build-essential locales acl mailutils wget nodejs zip unzip \
+        gnupg gnupg1 gnupg2 \
+        sudo \
+        ssh \
+    && docker-php-ext-install \
+        pdo_mysql \
+        soap \
+        zip \
+        opcache \
+        gd \
+        intl
 
-# -------------------------------------------------------
-# Configuration/compilation des extensions PHP
-# -------------------------------------------------------
-# GD doit être configuré AVANT l'installation
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg
+COPY build/php/opcache.ini /usr/local/etc/php/conf.d/
+COPY docker/build/php/custom.ini /usr/local/etc/php/conf.d/
 
-# Installer les extensions (intl a besoin de libicu-dev)
-RUN docker-php-ext-install -j"$(nproc)" \
-    pdo_mysql \
-    soap \
-    zip \
-    opcache \
-    gd \
-    intl
+RUN curl -sS https://getcomposer.org/installer | php && mv composer.phar /usr/local/bin/composer
+RUN composer self-update 1.9.0
 
-# -------------------------------------------------------
-# Config PHP (optionnel : si ces fichiers existent dans le repo)
-# -------------------------------------------------------
-COPY docker/build/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
-COPY docker/build/php/custom.ini  /usr/local/etc/php/conf.d/custom.ini
+RUN wget --no-check-certificate https://phar.phpunit.de/phpunit-6.5.3.phar && \
+    mv phpunit*.phar phpunit.phar && \
+    chmod +x phpunit.phar && \
+    mv phpunit.phar /usr/local/bin/phpunit
 
-# -------------------------------------------------------
-# Outils dev : Composer + PHPUnit 9 (compatible PHP 8.2)
-# -------------------------------------------------------
-COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+RUN usermod -u 1000 www-data
+RUN usermod -a -G www-data root
+RUN mkdir -p /var/www
+RUN chown -R www-data:www-data /var/www
+RUN mkdir -p /var/www/.composer
+RUN chown -R www-data:www-data /var/www/.composer
 
-RUN curl -fsSL https://phar.phpunit.de/phpunit-9.phar -o /usr/local/bin/phpunit \
- && chmod +x /usr/local/bin/phpunit
+WORKDIR /var/www/project/
 
-# -------------------------------------------------------
-# Droits et répertoires applicatifs
-# -------------------------------------------------------
-RUN usermod -u 1000 www-data \
- && usermod -a -G www-data root \
- && mkdir -p /var/www/.composer /var/www/project \
- && chown -R www-data:www-data /var/www
-
-WORKDIR /var/www/project
-
-# Copie du code (utilise --chown si BuildKit est actif)
-COPY --chown=www-data:www-data . /var/www/project/
-
-# (facultatif) Exposer le port FPM & healthcheck
-EXPOSE 9000
-HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD php-fpm -t || exit 1
+COPY . /var/www/project/
