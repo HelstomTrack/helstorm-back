@@ -11,6 +11,12 @@ use Symfony\Component\HttpFoundation\Response;
 
 class UserControllerTest extends WebTestCase
 {
+    private function clearUsers(): void
+    {
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $em->createQuery('DELETE FROM App\Entity\User u')->execute();
+    }
+
     private function payload(): array
     {
         return [
@@ -31,11 +37,10 @@ class UserControllerTest extends WebTestCase
     public function testRegisterValidationError(): void
     {
         $client = static::createClient();
+        $this->clearUsers();
 
-        // Remplace UserManager pour renvoyer une InvalidArgumentException
         $fakeUserManager = $this->createMock(UserManager::class);
         $fakeUserManager->method('register')->willThrowException(new \InvalidArgumentException('Missing field: email'));
-
         static::getContainer()->set(UserManager::class, $fakeUserManager);
 
         $client->request('POST', '/register', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([]));
@@ -48,16 +53,13 @@ class UserControllerTest extends WebTestCase
     public function testRegisterSuccessButProgramFails(): void
     {
         $client = static::createClient();
+        $this->clearUsers();
 
-        // Fake UserManager: renvoie un User avec un id
         $fakeUser = (new User())->setEmail('john@example.com')->setFirstname('John')->setLastname('Doe');
-        // simulate id via reflection (si entité a un setId privé, sinon adapte)
         $ref = new \ReflectionClass($fakeUser);
-        if ($ref->hasProperty('id')) {
-            $prop = $ref->getProperty('id');
-            $prop->setAccessible(true);
-            $prop->setValue($fakeUser, 1);
-        }
+        $prop = $ref->getProperty('id');
+        $prop->setAccessible(true);
+        $prop->setValue($fakeUser, 1);
 
         $fakeUserManager = $this->createMock(UserManager::class);
         $fakeUserManager->method('register')->willReturn($fakeUser);
@@ -79,15 +81,13 @@ class UserControllerTest extends WebTestCase
     public function testRegisterSuccess(): void
     {
         $client = static::createClient();
+        $this->clearUsers();
 
-        // Fake user & program
         $fakeUser = (new User())->setEmail('john@example.com')->setFirstname('John')->setLastname('Doe');
         $userRef = new \ReflectionClass($fakeUser);
-        if ($userRef->hasProperty('id')) {
-            $prop = $userRef->getProperty('id');
-            $prop->setAccessible(true);
-            $prop->setValue($fakeUser, 42);
-        }
+        $prop = $userRef->getProperty('id');
+        $prop->setAccessible(true);
+        $prop->setValue($fakeUser, 42);
 
         $fakeProgram = (new Programs())
             ->setUser($fakeUser)
@@ -95,13 +95,10 @@ class UserControllerTest extends WebTestCase
             ->setContent(['plan' => 'Do stuff'])
             ->setThreadId('thr_123')
             ->setRunId('run_456');
-
         $progRef = new \ReflectionClass($fakeProgram);
-        if ($progRef->hasProperty('id')) {
-            $prop = $progRef->getProperty('id');
-            $prop->setAccessible(true);
-            $prop->setValue($fakeProgram, 7);
-        }
+        $prop = $progRef->getProperty('id');
+        $prop->setAccessible(true);
+        $prop->setValue($fakeProgram, 7);
 
         $fakeUserManager = $this->createMock(UserManager::class);
         $fakeUserManager->method('register')->willReturn($fakeUser);
@@ -123,5 +120,112 @@ class UserControllerTest extends WebTestCase
         self::assertSame(['plan' => 'Do stuff'], $json['program'] ?? null);
         self::assertSame('thr_123', $json['thread_id'] ?? null);
         self::assertSame('run_456', $json['run_id'] ?? null);
+    }
+
+    public function testGetAllUserNotFound(): void
+    {
+        $client = static::createClient();
+        $this->clearUsers();
+
+        $client->request('GET', '/user');
+
+        self::assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
+        $json = json_decode($client->getResponse()->getContent(), true);
+        self::assertSame('User not found', $json['error'] ?? null);
+    }
+
+    public function testGetAllUserSuccess(): void
+    {
+        $client = static::createClient();
+        $this->clearUsers();
+        $em = static::getContainer()->get('doctrine')->getManager();
+
+        $user = new User();
+        $user->setEmail('jane@example.com')
+            ->setFirstname('Jane')
+            ->setLastname('Doe')
+            ->setPhone('0610101010')
+            ->setPassword('secret');
+        $em->persist($user);
+        $em->flush();
+
+        $client->request('GET', '/user');
+
+        self::assertResponseIsSuccessful();
+        $json = json_decode($client->getResponse()->getContent(), true);
+
+        $emails = array_column($json, 'email');
+        self::assertContains('jane@example.com', $emails);
+    }
+
+    public function testGetUserByIdNotFound(): void
+    {
+        $client = static::createClient();
+        $this->clearUsers();
+
+        $client->request('GET', '/user/999999');
+
+        self::assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
+        $json = json_decode($client->getResponse()->getContent(), true);
+        self::assertSame('User not found', $json['error'] ?? null);
+    }
+
+    public function testGetUserByIdSuccess(): void
+    {
+        $client = static::createClient();
+        $this->clearUsers();
+        $em = static::getContainer()->get('doctrine')->getManager();
+
+        $user = new User();
+        $user->setEmail('alice@example.com')
+            ->setFirstname('Alice')
+            ->setLastname('Smith')
+            ->setPhone('0611111111')
+            ->setPassword('secret');
+        $em->persist($user);
+        $em->flush();
+
+        $client->request('GET', '/user/' . $user->getId());
+
+        self::assertResponseIsSuccessful();
+        $json = json_decode($client->getResponse()->getContent(), true);
+        self::assertSame('alice@example.com', $json['email'] ?? null);
+    }
+
+    public function testDeleteUserNotFound(): void
+    {
+        $client = static::createClient();
+        $this->clearUsers();
+
+        $client->request('DELETE', '/user/999999');
+
+        self::assertResponseIsSuccessful();
+        self::assertSame('user deleted', $client->getResponse()->getContent());
+    }
+
+    public function testDeleteUserSuccess(): void
+    {
+        $client = static::createClient();
+        $this->clearUsers();
+        $em = static::getContainer()->get('doctrine')->getManager();
+
+        $user = new User();
+        $user->setEmail('delete@example.com')
+            ->setFirstname('Del')
+            ->setLastname('Ete')
+            ->setPhone('0622222222')
+            ->setPassword('secret');
+        $em->persist($user);
+        $em->flush();
+
+        $id = $user->getId();
+
+        $client->request('DELETE', '/user/' . $id);
+
+        self::assertResponseIsSuccessful();
+        self::assertSame('user deleted', $client->getResponse()->getContent());
+
+        $deletedUser = $em->getRepository(User::class)->find($id);
+        self::assertNull($deletedUser);
     }
 }
