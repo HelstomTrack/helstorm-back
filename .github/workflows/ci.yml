@@ -1,5 +1,4 @@
 name: CI for develop and feature branches
-
 on:
   push:
     branches:
@@ -37,6 +36,8 @@ jobs:
       JWT_SECRET_KEY: config/jwt/private.pem
       JWT_PUBLIC_KEY: config/jwt/public.pem
       JWT_PASSPHRASE: ${{ secrets.JWT_PASSPHRASE }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_ASSISTANT_ID: ${{ secrets.OPENAI_ASSISTANT_ID }}
 
     steps:
       - uses: actions/checkout@v3

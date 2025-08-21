@@ -45,7 +45,12 @@ class OpenAiController extends AbstractController
             return $this->json(['error' => 'JSON invalide: '.json_last_error_msg()], 400);
         }
 
-        $assistantId = $_ENV['OPENAI_ASSISTANT_ID'];
+        $assistantId = $_SERVER['OPENAI_ASSISTANT_ID'] ?? getenv('OPENAI_ASSISTANT_ID');
+
+        if (!$assistantId) {
+            throw new \RuntimeException('OPENAI_ASSISTANT_ID is not set.');
+        }
+
 
         $result = $openAiService->askAssistantWithRawJson($assistantId, $rawJson);
 

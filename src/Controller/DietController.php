@@ -3,73 +3,69 @@
 namespace App\Controller;
 
 use App\Entity\Diet;
-use App\Repository\UserRepository;
+use App\Repository\DietRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Nelmio\ApiDocBundle\Attribute\Model;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
-use OpenApi\Attributes as OA;
 
-
+#[Route('/diets')]
 class DietController extends AbstractController
 {
-    public function __construct(
-        public EntityManagerInterface $entityManager,
-        public SerializerInterface $serializer
-    )
+    #[Route('', name: 'diet_index', methods: ['GET'])]
+    public function index(DietRepository $dietRepository, SerializerInterface $serializer): JsonResponse
     {
+        $diets = $dietRepository->findAll();
+        $data = $serializer->serialize($diets, 'json', ['groups' => 'diet']);
+
+        return new JsonResponse($data, 200, [], true);
     }
 
-    /**
-     * @param int $userId
-     * @param UserRepository $userRepository
-     * @return JsonResponse
-     */
-    #[OA\Response(
-        response: 201,
-        description: 'Successful response',
-        content: new Model(type: Diet::class, groups: ['diet'])
-    )]
-    #[OA\Tag(name: 'Diet')]
-    #[Route('/api/diet-day/{userId}', methods: ['GET'])]
-    public function getDietsByUser(int $userId, UserRepository $userRepository): JsonResponse
+    #[Route('/{id}', name: 'diet_show', methods: ['GET'])]
+    public function show(Diet $diet, SerializerInterface $serializer): JsonResponse
     {
-        $user = $userRepository->find($userId);
+        $data = $serializer->serialize($diet, 'json', ['groups' => 'diet']);
+        return new JsonResponse($data, 200, [], true);
+    }
 
-        if (!$user) {
-            throw $this->createNotFoundException('User not found.');
+    #[Route('', name: 'diet_create', methods: ['POST'])]
+    public function create(Request $request, EntityManagerInterface $em, SerializerInterface $serializer): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        $diet = new Diet();
+        $diet->setName($data['name'] ?? 'No name');
+
+        $em->persist($diet);
+        $em->flush();
+
+        $json = $serializer->serialize($diet, 'json', ['groups' => 'diet']);
+        return new JsonResponse($json, 201, [], true);
+    }
+
+    #[Route('/{id}', name: 'diet_update', methods: ['PUT', 'PATCH'])]
+    public function update(Request $request, Diet $diet, EntityManagerInterface $em, SerializerInterface $serializer): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        if (isset($data['name'])) {
+            $diet->setName($data['name']);
         }
 
-        $response = array_map(fn($diet) => $this->formatDiet($diet), $user->getDiets()->toArray());
+        $em->flush();
 
-        return $this->json($response);
+        $json = $serializer->serialize($diet, 'json', ['groups' => 'diet']);
+        return new JsonResponse($json, 200, [], true);
     }
 
-    private function formatDiet(Diet $diet): array
+    #[Route('/{id}', name: 'diet_delete', methods: ['DELETE'])]
+    public function delete(Diet $diet, EntityManagerInterface $em): JsonResponse
     {
-        $daysStructure = [];
+        $em->remove($diet);
+        $em->flush();
 
-        foreach ($diet->getDays() as $day) {
-            $daysStructure[$day->getName()] = array_map(fn($meal) => $this->formatMeal($meal), $day->getMeals()->toArray());
-        }
-
-        return [
-            'name' => $diet->getName(),
-            'days' => $daysStructure,
-        ];
-    }
-
-    private function formatMeal($meal): array
-    {
-        return [
-            'name' => $meal->getName(),
-            'total_calories' => $meal->getTotalCalories(),
-            'food' => array_map(
-                fn($food) => ['name' => $food->getName()],
-                $meal->getFood()->toArray()
-            ),
-        ];
+        return new JsonResponse(null, 204);
     }
 }
