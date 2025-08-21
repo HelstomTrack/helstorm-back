@@ -1,24 +1,19 @@
-# Nom du workflow
 name: CI for develop and feature branches
-
-# Déclencheurs du workflow
 on:
   push:
     branches:
-      - main       # Déclenché sur les pushs vers main
-      - develop    # Déclenché sur les pushs vers develop
-      - 'feature/**'  # Déclenché sur toutes les branches feature/*
-      - 'hotfix/**'   # Déclenché sur toutes les branches hotfix/*
+      - main
+      - develop
+      - 'feature/**'
+      - 'hotfix/**'
   pull_request:
     branches:
-      - develop    # Déclenché sur les PR ouvertes vers develop
+      - develop
 
 jobs:
-  # Premier job : build et tests
   build-test:
-    runs-on: ubuntu-latest   # Runner GitHub Actions (Linux)
+    runs-on: ubuntu-latest
 
-    # Service MySQL pour les tests
     services:
       mysql:
         image: mysql:8.0
@@ -33,27 +28,26 @@ jobs:
           --health-cmd="mysqladmin ping --silent"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=5 
+          --health-retries=5
 
-    # Variables d’environnement nécessaires aux tests
     env:
       APP_ENV: test
       DATABASE_URL: mysql://ide:ide@127.0.0.1:3306/helstorm_test
       JWT_SECRET_KEY: config/jwt/private.pem
       JWT_PUBLIC_KEY: config/jwt/public.pem
       JWT_PASSPHRASE: ${{ secrets.JWT_PASSPHRASE }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_ASSISTANT_ID: ${{ secrets.OPENAI_ASSISTANT_ID }}
 
     steps:
-      - uses: actions/checkout@v3   # Récupère le code du repo
+      - uses: actions/checkout@v3
 
-      # Installe PHP 8.2 et les extensions nécessaires
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, json
 
-      # Met en cache le dossier vendor pour accélérer les builds
       - name: Cache Composer packages
         id: composer-cache
         uses: actions/cache@v3
@@ -63,12 +57,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-php-
 
-      # Installe les dépendances PHP
       - name: Install dependencies
         run: |
           DATABASE_URL="${DATABASE_URL}" composer install --prefer-dist --no-progress
 
-      # Attente active jusqu’à ce que MySQL soit prêt
       - name: Wait for MySQL
         run: |
           until mysqladmin ping -h 127.0.0.1 -uide -pide --silent; do
@@ -76,60 +68,50 @@ jobs:
             sleep 3
           done
 
-      # Création d’une base de test supplémentaire
       - name: Create helstorm_test_test database
         run: |
           mysql -h 127.0.0.1 -P 3306 -uroot -proot -e "CREATE DATABASE IF NOT EXISTS helstorm_test_test;"
 
-      # Attribution des droits à l’utilisateur `ide`
       - name: Grant privileges to user 'ide' on helstorm_test_test
         run: |
           mysql -h 127.0.0.1 -P 3306 -uroot -proot -e "GRANT ALL PRIVILEGES ON helstorm_test_test.* TO 'ide'@'%'; FLUSH PRIVILEGES;"
 
-      # Migration de la base avec Doctrine
       - name: Run Doctrine migrations
         run: |
           php bin/console doctrine:migrations:migrate --no-interaction --no-debug
 
-      # Génération de clés JWT à la volée
       - name: Generate JWT keys
         run: |
           mkdir -p config/jwt
           openssl genpkey -out config/jwt/private.pem -aes256 -algorithm rsa -pkeyopt rsa_keygen_bits:4096 -pass pass:${{ secrets.JWT_PASSPHRASE }}
           openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout -passin pass:${{ secrets.JWT_PASSPHRASE }}
 
-      # Exécution de la suite de tests (ex: PHPUnit, Pest, etc.)
       - name: Run test suite
         run: |
           composer test
 
-      # Nettoyage des clés JWT pour éviter de les exposer
       - name: Clean JWT keys
         run: rm -rf config/jwt
 
-      # Vérification de sécurité des dépendances Composer
       - name: Security Check
         run: |
           composer global require enlightn/security-checker
           ~/.composer/vendor/bin/security-checker security:check
 
-  # Deuxième job : build et push des images Docker (seulement sur main)
   build-and-push:
-    if: github.ref == 'refs/heads/main'   # S'exécute uniquement si la branche est "main"
-    needs: build-test                    # Dépend du succès du job build-test
+    if: github.ref == 'refs/heads/main'
+    needs: build-test
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3   # Récupère le code du repo
+      - uses: actions/checkout@v3
 
-      # Connexion à Docker Hub avec les secrets GitHub
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Build + push de l’image PHP-FPM
       - name: Build and push PHP-FPM image
         uses: docker/build-push-action@v5
         with:
@@ -140,7 +122,6 @@ jobs:
           no-cache: true
           pull: true
 
-      # Build + push de l’image Nginx
       - name: Build and push Nginx image
         uses: docker/build-push-action@v5
         with:
