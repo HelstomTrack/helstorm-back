@@ -70,7 +70,7 @@ class UserController extends AbstractController
         content: new Model(type: User::class, groups: ['non_sensitive_data'])
     )]
     #[OA\Tag(name: 'User')]
-    #[Route('/api/user', name: 'app_user', methods: ['GET'])]
+    #[Route('/user', name: 'app_user', methods: ['GET'])]
     public function getAllUser(SerializerInterface $serializer): JsonResponse
     {
         $users = $this->entityManager->getRepository(User::class)->findAll();
@@ -93,7 +93,7 @@ class UserController extends AbstractController
         content: new Model(type: User::class, groups: ['non_sensitive_data'])
     )]
     #[OA\Tag(name: 'User')]
-    #[Route('/api/user/{id}', name: 'app_user_id', methods: ['GET'])]
+    #[Route('/user/{id}', name: 'app_user_id', methods: ['GET'])]
     public function getUserById(int $id, SerializerInterface $serializer) : JsonResponse
     {
         $user = $this->entityManager->getRepository(User::class)->findOneBy(['id' => $id]);
@@ -115,7 +115,7 @@ class UserController extends AbstractController
         content: new Model(type: User::class, groups: ['non_sensitive_data'])
     )]
     #[OA\Tag(name: 'User')]
-    #[Route('/api/user/{id}', name: 'delete_user', methods: ['DELETE'])]
+    #[Route('/user/{id}', name: 'delete_user', methods: ['DELETE'])]
     public function deleteUser(int $id) : JsonResponse
     {
         $user = $this->entityManager->getRepository(User::class)->find($id);

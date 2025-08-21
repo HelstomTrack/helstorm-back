@@ -110,18 +110,6 @@ class Programs
         return $this->name;
     }
 
-    public function getPlan(): ?Plan
-    {
-        return $this->plan;
-    }
-
-    public function setPlan(?Plan $plan): static
-    {
-        $this->plan = $plan;
-
-        return $this;
-    }
-
     /**
      * @return Collection<int, Plan>
      */
